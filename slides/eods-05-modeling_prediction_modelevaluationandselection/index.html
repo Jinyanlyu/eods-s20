@@ -1,0 +1,2244 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Modeling, Prediction, Model Evaluation and Selection</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - S2020
+
+# Modeling, Prediction, Model Evaluation and Selection 
+
+2/24/2020
+
+
+---
+# Modeling and ML
+
+--
+count:false
+What is a **model**?
+
+--
+count:false
+> Specification of a mathematical (or probabilistic) relationship between different variables.
+
+<br/>
+--
+count:false
+What is **Machine Learning**?
+
+--
+count:false
+> Creating and using models that are learned from data.
+
+
+---
+# Terms in ML
+
+--
+count:false
+data: our observations (Ex: taxi rides)
+
+--
+count:false
+
+- $x_i$: features, attributes, independent/exogenous variables 
+ - (Ex: length of ride, number of riders)
+
+
+--
+count:false
+
+- $y_i$: target, label, outcome, dependent/endogenous variables 
+ - (Ex: tip amount, length of ride)
+
+
+--
+count:false
+- $f(x_i) \rightarrow y_i$: model that maps $x_i$ to $y_i$
+
+---
+# Dimensions of ML
+<br>
+
+--
+count:false
+- Interpretation vs Prediction
+
+--
+count:false
+- Supervised vs Unsupervised vs Reinforement Learning
+    - Semi-Supervised, Online Learning
+
+--
+count:false
+- Supervised: Regression vs Classification
+
+--
+count:false
+- Supervised: Model Families
+
+---
+### Interpretation vs Prediction
+
+--
+count:false
+- Do we care more about understanding how $X$ relates to $y$?
+--
+count:false
+    - Ex: What happens to tip size as taxi trip length increases?
+--
+count:false
+    - Ex:What is the relationship between debt and loan default?
+--
+count:false
+
+
+
+--
+count:false
+- Do we care more about generating predictions?
+--
+count:false
+    - Ex: For a given trip, what will the tip size likely be?
+--
+count:false
+    - Ex: For a given loan, will there be a default?
+
+---
+###Supervised vs Unsupervised vs Reinforcement Learning
+
+--
+count:false
+- Do we have a target, $y$? 
+
+
+--
+count:false
+.smaller[
+- Yes:
+    - **Supervised**: Data consists of $(X,y)$ pairs
+    - Classification, Regression
+    - Ex: What is the relationship between length of ride and tip amount?
+]
+--
+count:false
+.smaller[
+- No:
+    - **Unsupervised**: Data consists only of $(X)$ features
+    - Clustering, Topic Modeling, etc.
+    - Ex: Are there any clusters in length of ride?
+]
+--
+count:false
+.smaller[
+- Eventually:
+ - **Reinforcement Learning**
+ - After a series of predictions (path) get a reward from a reward function
+ - Ex. Poker player
+    ]
+
+---
+###Other Learning Paradigms
+
+--
+count:false
+- Do we have a mix of labeled and unlabeled?
+    - **Semi-Supervised**
+    - Can we use structure of unlabeled data along with labeled?
+
+--
+count:false
+- Will we continue getting new data?
+    - **Online Learning**
+    - Is there an oracle (ground truth) we can consult?
+    - Can we select which points to make predictions on?
+
+
+
+---
+### Supervised: Regression vs Classification
+
+
+--
+count:false
+- **Regression** -> predict a real value (Ex. predict tip)
+
+--
+count:false
+- **Classification** -> predict a discrete class, category
+
+
+
+--
+count:false
+- **Binary** classification : two categories 
+    - pos/neg, cat/dog, win/lose
+--
+count:false
+- **Multiclass** classification : more than two categories 
+    - red/green/blue, flower type, integer 0-10
+
+--
+count:false
+- **Multilabel** classification : can assign more than one label to an instance
+    - paper topics, entities in image
+
+<br/>
+--
+count:false
+.smaller[
+- can convert a regression problem into classification with binning/threshold]
+
+
+---
+### Supervised: Model Families
+--
+count:false
+- Distance Based
+    - K-Nearest Neighbor
+--
+count:false
+- Probabilistic
+    - Naive Bayes
+--
+count:false
+- Linear
+    - LinearRegression/Logistic Regression/SVM
+--
+count:false
+- Tree Based
+    - Decision Trees
+--
+count:false
+- Network Based
+    - Neural Networks
+
+
+---
+# Prediction using SL: Classification
+
+--
+count:false
+- Given an item $x_i$, predict a value $\hat{y}_i$
+
+.smallest[
+- Ex: Can we predict a wine's class from a few of it's features?]
+
+.smallest[
+```python
+from sklearn import datasets
+wine = datasets.load_wine()
+X = pd.DataFrame(wine.data,columns=wine.feature_names)
+y = wine.target
+```]
+.smallest[
+```python
+# keep only class 0 and 1 and two columns of X and standardize X
+features = wine.feature_names[3:5]
+X = X.iloc[y &lt; 2,3:5].apply(lambda x: (x-x.mean())/x.std()).values
+y = y[y &lt; 2]
+X.shape,y.shape
+```]
+.smallest[
+```
+((130, 2), (130,))
+```]
+.smallest[
+```python
+features
+```]
+.smallest[
+```
+['alcalinity_of_ash', 'magnesium']
+```
+]
+
+---
+### Example: Wine
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(8,8))
+sns.scatterplot(X[y==0,0],X[y==0,1],label='class 0',marker='s',s=80);
+sns.scatterplot(X[y==1,0],X[y==1,1],label='class 1',marker='^',s=80);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[
+![](images/wine_2class.png)]
+
+---
+# Modeling Libraries
+
+--
+count:false
+- Interpretation - Statsmodels
+        
+
+.center[![:scale 50%](images/statsmodels.png)]
+
+--
+count:false
+- Prediction - scikit-learn
+ - plus much more!
+
+.center[![:scale 30%](images/sklearn.png)]
+
+---
+# Sklearn Standard Usage
+
+--
+count:false
+```python
+from sklearn import Model  # import the model
+```
+
+--
+count:false
+```python
+model = Model()            # instantiate and set any hyperparameters
+```
+
+--
+count:false
+```python
+model.fit(X,y)             # fit/train the model on the data
+```
+
+--
+count:false
+```python
+yhat = model.predict(X)    # generate predictions using trained model
+```
+
+--
+count:false
+```python
+yhat = model.score(y,yhat) # measure model performance
+```
+
+--
+count:false
+```python
+X_new = model.transform(X) # transform data
+```
+
+
+
+---
+# Aside: Mlxtend and conda-forge
+
+
+--
+count:false
+.small[
+> Mlxtend (machine learning extensions) is a Python library of useful tools for the day-to-day data science tasks.]
+
+.center[
+![:scale 10%](images/mlxtend.png)]
+
+--
+count:false
+.small[
+> A community-led collection of recipes, build infrastructure and distributions for the conda package manager.]
+.center[![:scale 10%](images/conda_forge.png)]
+
+--
+count:false
+```bash
+$ conda install --name eods-s20 --channel conda-forge mlxtend
+```
+
+---
+# k-Nearest Neighbor
+
+> What category do most of the $k$ nearest neighbors belong to
+
+<br>
+<br>
+--
+count:false
+.center[![](images/KnnClassification.svg.png)]
+
+---
+# k-Nearest Neighbor
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(X,y)
+```
+```
+KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='euclidean',
+                     metric_params=None, n_jobs=None, n_neighbors=3, p=2,
+                     weights='uniform')
+```
+
+---
+#k-Nearest Neighbor
+
+.smallest[
+```python
+from mlxtend.plotting import plot_decision_regions
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=knn);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_knn.png)]
+
+
+---
+#k-Nearest Neighbor
+
+###Pros and Cons of kNN
+--
+count:false
+- fast to train
+--
+count:false
+- potentially slow to predict
+--
+count:false
+- need to deal with categorical variables
+--
+count:false
+- curse of dimensionality
+
+--
+count:false
+###Need to choose
+- number of neighbors
+- distance function
+
+
+---
+# Generalization
+
+--
+count:false
+- But how good is the model?
+
+
+--
+count:false
+- **Generalization**: 
+   - how well will model predict on data that it hasn't seen yet?
+
+
+--
+count:false
+   - Train on $(X_i, y_i):i=1:n$, predict on $x^*$
+
+--
+count:false
+- But we used all of our data to train?
+    - **Train/Test split**
+
+
+---
+# Train/Test Split
+
+<br/>
+--
+count:false
+.center[![](images/train_test_split.png)]
+<br>
+
+
+--
+count:false
+- Training set: portion of dataset used for training
+
+--
+count:false
+- Test or Held-aside set: portion of the dateset used for evaluation
+
+
+--
+count:false
+- Want your test set to reflect the same distribution as training
+
+--
+count:false
+.smallest[From https://www.researchgate.net/figure/Train-Test-Data-Split_fig6_325870973]
+
+---
+# Train/Test Split
+--
+count:false
+.smaller[
+```python
+from sklearn.model_selection import train_test_split
+
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test = train_test_split(X,
+                                                 y,
+                                                 test_size=.25, #default
+                                                 stratify=y,
+                                                 random_state=123)
+```]
+
+
+--
+count:false
+- stratify: maintain the same class distribution
+
+--
+count:false
+- random_state: only use for testing code (get same split every time)
+
+
+--
+count:false
+- How big should test be? Large enough to capture variance of dataset.
+    - depends on the dataset and the models being trained
+
+---
+# Train/Test Split
+
+--
+count:false
+.smaller[
+```python
+X.shape, y.shape # original dataset
+```]
+.smaller[
+```
+((130, 2), (130,))
+```]
+
+--
+count:false
+.smaller[
+```python
+# split into a train and test set
+X_train,X_test,y_train,y_test = train_test_split(X_tips, y_tips, random_state=123)
+```]
+
+--
+count:false
+.smaller[
+```python
+X_train.shape, X_test.shape
+```]
+.smaller[
+```
+((97, 2), (33, 2))
+```]
+
+--
+count:false
+.smaller[
+```python
+y_train.shape, y_test.shape
+```]
+.smaller[
+```
+((97,), (33,))
+```]
+
+--
+count:false
+.smaller[
+```python
+f'{X_test.shape[0]/X.shape[0]:0.2f}'
+```]
+.smaller[
+```
+0.25
+```]
+
+---
+# Classification: Confusion Matrix
+
+What are the different ways we can get things wrong?
+
+<br>
+--
+count:false
+In Binary Classification:
+.center[
+![:scale 45%](images/confusion_matrix.png)
+]
+<br>
+.smallest[
+From https://towardsdatascience.com/understanding-confusion-matrix-a9ad42dcfd62]
+
+---
+# Classification: Accuracy
+
+<br>
+
+The number correct out of the total:
+
+--
+count:false
+$$
+\text{accuracy} = \frac{TP+TN}{TP+FP+FN+TN}
+$$
+
+---
+# Classification: Baseline Accuracy
+
+What's a simple guess?
+--
+count:false
+.smaller[
+```python
+f'{ sum(y_train == 1) / len(y_train) :0.3f}'
+```]
+.smaller[
+```
+'0.546' # 1 is majority
+```]
+
+--
+count:false
+.smaller[
+```python
+from sklearn.dummy import DummyClassifier
+
+dummy_cl = DummyClassifier(strategy='most_frequent')
+dummy_cl.fit(X_train,y_train)
+f'{ dummy_cl.score(X_test,y_test) :0.3f}' # default is accuracy
+```]
+.smaller[
+```
+'0.545'
+```]
+--
+count:false
+.smaller[
+```python
+knn.fit(X_train,y_train)
+f'{ knn.score(X_test,y_test) :0.3f}'
+```]
+.smaller[
+```
+'0.758'
+```]
+
+---
+# Overfitting/Underfitting
+
+--
+count:false
+- **Overfitting**: poor generalization due to complexity
+    - learning noise in training data
+
+--
+count:false
+- **Underfitting**: poor generalization due to simplicity
+    - not flexibile enough to learn concept
+
+--
+count:false
+- Can we find a balance between simplicity and complexity?
+    - we want a balance between **bias** and **variance**
+
+---
+# Bias-Variance Tradeoff
+
+.center[
+![](images/05.03-bias-variance.png)]
+
+---
+# Bias-Variance Tradeoff
+
+.center[
+![](images/05.03-bias-variance-2.png)]
+
+
+---
+# Bias-Variance Tradeoff
+
+Q : What happens when we retrain model on different training sets?
+
+--
+count:false
+.center[
+![:scale 60%](images/bias_variance_targets.jpeg)]
+
+---
+# Bias-Variance Tradeoff
+<br>
+
+--
+.center[
+![:scale 60%](images/bias-variance-tradeoff.png)]
+
+
+---
+# Overfitting/Underfitting
+
+--
+count:false
+- **Overfitting**: poor generalization due to complexity
+    - learning noise in training data
+    - model has high **variance** and low **bias**
+
+--
+count:false
+- **Underfitting**: poor generalization due to simplicity
+    - not flexibile enough to learn concept
+    - model has high **bias** and low **variance**
+
+---
+# Avoiding Overfitting/Underfitting
+
+--
+count:false
+- **Overfitting**: poor generalization due to complexity
+    - learning noise in training leading to poor generalization
+
+--
+count:false
+- Never train and evaluate on the same set of data!
+    - train test split
+    - cross-validation
+
+--
+count:false
+- Keep the model as simple as possible
+    - Occom's Razor
+    - Increase Bias
+
+
+--
+count:false
+- **Underfitting**: poor generalization due to simplicity
+    - Increase Variance
+
+---
+# Overfitting/Underfitting with kNN
+
+--
+count:false
+.smaller[
+```python
+k1 = KNeighborsClassifier(n_neighbors=1).fit(X_train,y_train)
+```]
+--
+count:false
+.smaller[
+```python
+print(f'acc on train: {k1.score(X_train,y_train) :0.2f}')
+print(f'acc on test:  {k1.score(X_test,y_test)   :0.2f}')
+```]
+--
+count:false
+.smaller[
+```
+acc on train: 0.98
+acc on test:  0.58
+```]
+
+
+
+--
+count:false
+.smaller[
+```python
+kX = KNeighborsClassifier(n_neighbors=len(X_train)).fit(X_train,y_train)
+```]
+--
+count:false
+.smaller[
+```python
+print(f'acc on train: {kX.score(X_train,y_train) :0.2f}')
+print(f'acc on test:  {kX.score(X_test,y_test)   :0.2f}')
+```]
+--
+count:false
+.smaller[
+```
+acc on train: 0.55
+acc on test:  0.55
+```]
+
+
+---
+# How to choose $k$?
+
+- **Hyperparameters**: 
+    - parameters of the model that aren't learned
+    - parameters set by the experimenter
+
+--
+count:false
+- Choose $k$ that gives best test set performance?
+
+--
+count:false
+- No! Might overfit on the test set!
+
+
+--
+count:false
+- Solutions:
+--
+count:false
+ - tuning set
+--
+count:false
+ - cross-validation
+
+
+
+---
+# Cross Validation
+
+--
+count:false
+### $k$-Fold Cross Validation
+
+--
+count:false
+1. split dataset into $k$ subsets
+--
+count:false
+2. for each subset
+--
+count:false
+    - train on the other $k-1$ subsets
+--
+count:false
+    - test on this subset to get a score
+--
+count:false
+3. average across all scores
+
+
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_1.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_2.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_3.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_4.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_5.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_6.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_7.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_8.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_9.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_10.png)]
+
+---
+# 3-Fold Cross Validation
+.center[
+![](images/cv_11.png)]
+
+---
+# 10-Fold Cross Validation
+
+.center[
+![:scale 100%](images/cv10fold.png)]
+
+---
+# Cross Validation
+
+--
+count:false
+- Can be used for:
+    - tuning hyperparameters
+    - model selection
+    - any time we need estimate of model performance
+
+--
+count:false
+- Issue: each fold requires training the model
+
+--
+count:false
+- What values can $k$ take?
+--
+count:false
+    - min: 2
+--
+count:false
+    - max: $n$ (Leave-One-Out CV)
+
+---
+# Cross Validation in Sklearn
+
+```python
+from sklearn.model_selection import cross_val_score
+```
+
+--
+count:false
+```python
+# using accuracy
+scores = cross_val_score(KNeighborsClassifier(n_neighbors=3),
+                         X_train,
+                         y_train,
+                         cv=5, #default
+                         scoring='accuracy' #default)
+scores
+```
+```
+array([0.85      , 0.8       , 0.68421053, 0.78947368, 0.94736842])
+```
+
+--
+count:false
+```python
+print(f'{np.mean(scores) :0.2f} +- {2*np.std(scores) :0.2f}')
+```
+```
+0.81 +- 0.17
+```
+
+---
+# Tuning Hyperparameters with CV
+
+```python
+mean_scores = []
+for k in [1, 2, 3, 5, 10]:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    scores = cross_val_score(knn,X_train,y_train,cv=10,scoring='accuracy')
+    mean_scores.append( (k,scores.mean()) )
+```
+--
+count:false
+```python
+# find the k that gives highest accuracy
+sorted(mean_scores,key=lambda x:x[1])[-1]
+```
+```
+(3, 0.8166666666666668)
+```
+
+
+---
+# Visualize Hyperparameter Tuning
+
+### Validation Curve
+.center[
+![](images/05.03-validation-curve.png)]
+
+---
+# Visualize Hyperparameter Tuning
+
+```python
+from sklearn.model_selection import validation_curve
+
+k = [1,2,3,5,10,20,50,80]
+train_scores,test_scores = validation_curve(KNeighborsClassifier(),
+                                            X_train, y_train,
+                                            'n_neighbors',
+                                            k,
+                                            cv=10,
+                                            scoring='accuracy'
+                                           )
+mean_train_scores = np.mean(train_scores,1)
+mean_test_scores = np.mean(test_scores,1)
+```
+
+---
+# Visualize Hyperparameter Tuning
+
+.smallest[
+```python
+plt.plot(k, mean_train_scores, 'o-', color='b',label='training score');
+plt.plot(k, mean_test_scores, 'o-', color='r', label='validation score');
+plt.xlabel('n_neighbors'), plt.ylabel('accuracy');
+plt.title('Validation Curve for kNN');
+```]
+.center[![:scale 60%](images/validation_curve.png)]
+
+
+---
+# More Than One Parameter?
+
+**GridSearch:** Search over a 'grid' of hyperparameter settings
+
+- Example: "number of neighbors" and "distance metric"
+
+---
+# GridSearch with CV
+--
+count:false
+.smaller[
+```python
+from sklearn.model_selection import GridSearchCV
+```]
+
+--
+count:false
+.smaller[
+```python
+params = {'n_neighbors':[1,2,3,5,10,20,50],
+          'metric':['euclidean','manhattan']}
+```]
+--
+count:false
+.smaller[
+```python
+gscv = GridSearchCV(KNeighborsClassifier(),params,cv=3,
+                    scoring='accuracy')
+gscv.fit(X_train,y_train)
+```]
+--
+count:false
+.smaller[
+```python
+print(gscv.best_params_)
+```]
+--
+count:false
+.smaller[
+```
+{'metric': 'manhattan', 'n_neighbors': 20}
+```]
+--
+count:false
+.smaller[
+```python
+scores = cross_val_score(gscv.best_estimator_,X_train,y_train,cv=5,
+                         scoring='accuracy')
+print(f'{np.mean(scores):0.2f} +- {2*np.std(scores):0.2f}')
+```]
+.smaller[
+```
+0.81 +- 0.18
+```]
+
+---
+# What's the effect of dataset size?
+
+### Learning Curve
+.center[
+![](images/05.03-learning-curve.png)]
+
+
+---
+# What's the effect of dataset size?
+
+.smaller[
+```python
+from sklearn.model_selection import learning_curve
+
+train_sizes,train_scores,test_scores = learning_curve(gscv.best_estimator_,
+                                                      X_train, y_train,
+                                                      cv=5,
+                                                      scoring='r2'
+                                                     )
+mean_train_scores = np.mean(train_scores,1)
+mean_test_scores = np.mean(test_scores,1)
+```]
+
+---
+# What's the effect of dataset size?
+.smallest[
+```python
+plt.plot(train_sizes, mean_train_scores, 'o-', color="b", label="training score");
+plt.plot(train_sizes, mean_test_scores, 'o-', color="r", label="validation score")
+plt.xlabel('training set size'), plt.ylabel('r2_score');
+plt.title('Learning Curve for DecisionTreeRegressor');
+plt.legend(loc="best");
+```]
+.center[
+![:scale 60%](images/learning_curve.png)]
+
+---
+# Review So Far
+
+.smaller[
+- Overfitting and Underfitting
+  - Bias/Variance Tradeoff
+  - Train/Test split
+- Model Selection
+  - Baseline
+- Tuning Hyperparameters
+  - Cross Validation
+  - Grid Search
+- Plotting Model Fit
+  - Validation Curve
+  - Learning Curve]
+
+### .center[Questions?]
+
+---
+# Classification: Error
+
+--
+count:false
+error = 1-accuracy
+
+--
+count:false
+
+Different kinds of error
+
+.center[
+![:scale 45%](images/confusion_matrix.png)
+]
+
+---
+# Precision vs. Recall
+
+### Precision
+
+Out of the ones predicted positive, how many are truly positive?
+
+$$
+\text{precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}
+$$
+
+--
+count:false
+### Recall
+
+Out of the truly positive, how many did I call positive?
+
+$$
+\text{recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
+$$
+
+---
+# Precision-Recall Curve
+
+But how do we decide if something is positive or negative?
+
+--
+count:false
+
+Often, set a threshold :
+
+$$
+\hat{y}_i = \begin{cases}
+1 &\text{if } P(y_i=1|x_i) > \text{threshold}, \\\\
+0 &\text{o.w.}
+\end{cases}
+$$
+
+--
+count:false
+Usually, threshold = .5, but it doesn't have to be.
+
+
+--
+count:false
+What happens if we change it?
+
+---
+# Precision-Recall Curve
+
+--
+count:false
+1. Get class prediction probabilities
+--
+count:false
+2. Order by $P(y=1|x)$
+--
+count:false
+3. Move threshold for calling $x_i$ positive
+--
+count:false
+4. Record precision and recall
+
+---
+# Precision-Recall Curve
+
+--
+count:false
+.smallest[
+```python
+# return predicted class probabilities
+knn20 = KNeighborsClassifier(n_neighbors=20).fit(X_train,y_train)
+y_pred = knn20.predict_proba(X_train)
+y_pred[:3,:]
+```]
+.smallest[
+```
+array([[0.4 , 0.6 ],
+       [0.85, 0.15],
+       [0.75, 0.25]])
+```]
+--
+count:false
+.smallest[
+```python
+# get a matrix of p(y_i=1) and y_i pairs
+tmp = np.transpose(np.vstack([y_pred[:,1],y_train]))
+
+# sort by p(y_i=1) descending
+tmp = np.array(sorted(tmp,key=lambda x:x[0])[::-1])
+tmp[-3:]
+```]
+.smallest[
+```
+array([[0.05, 0.  ],
+       [0.05, 0.  ],
+       [0.05, 0.  ]]))
+
+```]
+--
+count:false
+.smallest[
+```python
+# or just let sklearn do it
+from sklearn.metrics import precision_recall_curve
+precision, recall, thresholds = precision_recall_curve(y_train, y_pred_logr[:,1])
+```]
+
+---
+# Precision-Recall Curve
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,2,figsize=(12,4))
+ax[0].step(recall, precision, color='b', alpha=0.2, where='post');
+ax[0].fill_between(recall, precision,color='b', step='post', alpha=0.2)
+ax[0].set_xlabel('Recall');ax[0].set_ylabel('Precision');
+ax[1].plot(thresholds,precision[:-1], label='Precision')
+ax[1].plot(thresholds,recall[:-1],label='Recall')
+ax[1].legend()
+ax[1].set_xlabel('threshold');ax[1].set_ylabel('measure');
+```]
+.center[![:scale 100%](images/precision_recall_curves.png)]
+
+
+---
+# f1-score
+
+--
+count:false
+- Usually, we just want one number to optimize
+
+--
+count:false
+- **f1-score**: harmonic mean of precision and recall
+--
+count:false
+  - eg. weighted average of the precision and recall
+
+$$
+F_1 = 2 \cdot \frac{\text{precision} \cdot \text{recall}}{\text{precision} + \text{recall}}
+$$
+
+--
+count:false
+.smaller[
+```python
+scores = cross_val_score(knn20,X_train,y_train,cv=5,scoring='f1')
+print(f'{np.mean(scores):0.2f} +- {2*np.std(scores):0.2f}')
+```
+```
+0.80 +- 0.18
+```]
+--
+count:false
+.smaller[
+```python
+scores = cross_val_score(dummy_cl,X_train,y_train,cv=5,scoring='f1')
+print(f'{np.mean(scores):0.2f} +- {2*np.std(scores):0.2f}')
+```
+```
+0.71 +- 0.03
+```]
+
+---
+# ROC Curve
+
+- **R**eceiver **O**perating **C**haracteristic
+--
+count:false
+    - displays FPR vs TPR
+--
+count:false
+    - or (1-Specificity) vs. Sensitivity
+
+
+--
+count:false
+- True Positive Rate (TPR) = Sensitivity = Recall = $\frac{TP}{(TP + FN)}$
+
+
+--
+count:false
+- False Positive Rate (FPR) = (1 - Specificity) = $\frac{FP}{(FP + TN)}$
+
+
+--
+count:false
+- True Negative Rate (TNR) = Specificity = $\frac{TN}{(TN + FP)}$
+
+
+---
+# ROC Curve
+
+```python
+# again sklearn to the rescue
+from sklearn.metrics import roc_curve
+
+fpr_knn20, tpr_knn20, _ = roc_curve(y_train, y_pred[:,1])
+```
+
+---
+# ROC Curve 
+
+```python
+def plot_roc(curves):
+    fig,ax = plt.subplots(1,1,figsize=(6,6))
+    lw = 2
+    for fpr,tpr,model_name in curves:
+        l1, = ax.plot(fpr, tpr, lw=lw, label=model_name)
+    ax.plot([0, 1], [0, 1], color='k', lw=lw, linestyle='--')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_aspect('equal', 'box')
+    ax.set_title('Receiver operating characteristic example')
+    ax.legend()
+```
+
+---
+# ROC Curve
+
+.smallest[
+```python
+curves = [(fpr_knn20,tpr_knn20,'knn20')]
+plot_roc(curves);
+```]
+.center[![:scale 45%](images/roc_curve_01.png)]
+
+---
+# ROC Curve
+
+.smallest[
+```python
+fpr\_dummy, tpr\_dummy, \_ = roc_curve(y_train, dc.predict\_proba(X\_train)[:,1]) # Compare dummy
+curves.append((fpr_dummy,tpr_dummy,'dummy')); plot_roc(curves);
+```]
+.center[![:scale 45%](images/roc_curve_02.png)]
+
+---
+# ROC Curve
+.smallest[
+```python
+for k in [3,10]: 
+    fpr, tpr, \_ = roc_curve(y_train,KNeighborsClassifier(n_neighbors=k).fit(X_train,y_train).predict_proba(X_train)[:,1])
+    curves.append((fpr,tpr,'knn'+str(k)))
+plot_roc(curves);
+```]
+.center[![:scale 40%](images/roc_curve_03.png)]
+
+---
+# ROC AUC
+
+--
+count:false
+- But again, we'd like one number to optimize
+
+--
+count:false
+- **A**rea **U**nder the **C**urve
+
+--
+count:false
+```python
+from sklearn.metrics import roc_auc_score
+```
+--
+count:false
+```python
+knn3 = KNeighborsClassifier(n_neighbors=3).fit(X_train,y_train)
+for name,model in [('dummy',dummy_cl),('knn20',knn20),('knn3',knn3)]:
+    y_pred = model.predict_proba(X_train)
+    auc = roc_auc_score(y_train,y_pred[:,1])
+    print('{:5s} auc = {:0.3f}'.format(name,auc))
+```
+```
+dummy auc = 0.500
+knn20 auc = 0.883
+knn3  auc = 0.948
+```
+
+---
+# Evaluate for Generalization
+
+Once we're done fitting model, check against test set
+
+```python
+knn3.score(X_test,y_test)
+```
+```
+'0.76'
+```
+
+---
+# Review: Steps to Choosing a Model
+- Create Held-Aside Set (Train/Test Split)
+- Determine Metric (or combination of metrics)
+- Get a Baseline for comparison
+- Use Cross-Validation to fit Hyperparameters and Choose Model
+- Evaluate Chosen Model on Held-Aside Set
+
+---
+# Review Classification Metrics
+
+- Confusion Matrix
+- Accuracy/Error
+- Precision
+- Recall
+- $F_1$ Score
+- ROC
+- ROC AUC
+
+
+---
+# Aside: Single Features, Single Sample
+
+.smaller[
+```python
+linr.fit(X_train.iloc[:,0],y_train)
+```]
+
+.smaller[
+```
+ValueError: Expected 2D array, got 1D array instead:
+array=[25.56 21.5  34.3  26.86 27.05 10.7...]
+...
+Reshape your data either using array.reshape(-1, 1) if your data 
+has a single feature or array.reshape(1, -1) if it contains a single sample.
+```]
+
+--
+count:false
+.smaller[
+```python
+X_train.iloc[:,0].shape
+```]
+.smaller[
+```
+(183,)
+```]
+--
+count:false
+.smaller[
+```python
+X_train.iloc[:,0].values.reshape(-1,1).shape
+```]
+.smaller[
+```
+(183, 1)
+```]
+
+---
+# Regression
+
+- But what about models to predict a real value?
+
+- Example: predict tips from total_bill
+
+.smaller[
+```python
+tips = sns.load_dataset('tips')
+tips.shape
+```
+```
+(244, 7)
+```]
+--
+count:false
+
+.smaller[
+```python
+tips.head(5)
+```]
+![:scale 50%](images/tips_head.png)
+
+---
+# Correlation
+
+- **Question:** are total_bill and tips correlated?
+
+--
+count:false
+.smallest[
+```python
+sns.jointplot(x='total_bill',y='tip',data=tips);
+```]
+.center[
+![](images/tips_totalbill_joint.png)]
+
+---
+# Aside: Pearson Corr Coef.
+
+- **Question:** are total_bill and tips correlated? 
+--
+count:false
+- Could calculate Pearson Correlation Coefficient
+--
+count:false
+- Assumes normally distributed data! (which is not true here)
+
+--
+count:false
+```python
+from scipy.stats import pearsonr
+
+r,p = pearsonr(tips.total_bill,tips.tip)
+print(f'r: {r:.2f}, p: {p:.2f}')
+```
+```
+r: 0.68, p: 0.00
+```
+
+
+<br>
+--
+count:false
+.smallest[
+[On the Effects of Non-Normality on the Distribution of the Sample Product-Moment Correlation Coefficient](https://www.jstor.org/stable/2346598?seq=1#page_scan_tab_contents)
+]
+
+---
+# Obligitory Correlation vs. Causation
+
+.center[![](images/correlation.png)]
+
+--
+count:false
+- correlation does not mean causation!
+
+--
+count:false
+- causal inference
+--
+count:false
+    - controlled experiment
+--
+count:false
+    - control for confounding variables
+
+
+---
+# Spurious Correlation
+
+--
+count:false
+- Also, look hard enough and you'll find correlation.
+    - See [spurious correlations](https://www.tylervigen.com/spurious-correlations) for examples
+--
+count:false
+![](images/spurious_correlation.png)
+
+
+
+---
+#Linear Relationship
+
+- Is there a linear relationship between total_bill and tips?
+
+--
+count:false
+.smallest[
+```python
+sns.jointplot(x='total_bill',y='tip',data=tips, kind='reg');
+```]
+.center[
+![](images/tips_totalbill_joint_reg.png)]
+]
+
+
+---
+#Simple Linear Regression
+
+<br>
+--
+count:false
+.center[
+$\Large y_i = \beta x_i + \alpha + \varepsilon_i$ 
+]
+
+
+<br>
+--
+count:false
+- **$y_i$** : dependent, endogenous, target, label (Ex: `tips`)
+
+--
+count:false
+- **$x_i$** : independent, exogenous , feature, attribute (Ex: `total_bill`)
+
+--
+count:false
+- **$\beta$** : coefficient, slope
+
+--
+count:false
+- **$\alpha$** : bias term, intercept
+
+--
+count:false
+- **$\varepsilon_i$** : error, hopefully small, often assumed $\mathcal{N}(0,1)$
+
+
+--
+count:false
+- Want to find values for $\beta$ and $\alpha$ that best fit the data.
+
+
+---
+#Finding $\beta$ and $\alpha$
+
+--
+count:false
+- **prediction**: $\hat{y}_i = f(x_i) = \beta x_i + \alpha$
+
+--
+count:false
+
+- **error**: $error(y_i,\hat{y}_i) = y_i - \hat{y}_i$
+
+--
+count:false
+
+- **sum of squared errors**: $\sum_{i=1:n}{\left(y_i - \hat{y}_i\right)^2}$
+
+
+--
+count:false
+- **least squares**: make the sum of squared errors as small as possible
+
+
+--
+count:false
+- **gradient descent**: minimize error by following the gradient wrt $\beta,\alpha$
+--
+count:false
+    - can sometime be optimized in closed form
+--
+count:false
+    - often done iteratively
+
+---
+#Aside: Gradient Descent
+
+--
+count:false
+- Want to maximize or minimize something (Ex: squared error)
+
+--
+count:false
+- **Gradient** : direction, vector of partial derivatives
+--
+count:false
+    - can get complicated, will often estimate this
+
+--
+count:false
+- **Gradient Descent** : take steps wrt the direction of the gradient 
+--
+count:false
+    - **maximize** : in the direction of the gradient
+--
+count:false
+    - **minimize** : in the opposite direction of the gradient
+
+--
+count:false
+- **Global Maximum/Minimum** : the single best solution
+
+--
+count:false
+- **Local Maximum/Minimum** : the best solution in the neighborhood
+
+
+---
+#Aside: Gradient Descent
+
+.center[
+![](images/gradient_descent.png)]
+
+- Finding a global min using gradient descent
+
+.smallest[
+- From Data Science From Scratch ([Chapter 8](https://ezproxy.cul.columbia.edu/login?qurl=https%3a%2f%2fsearch.ebscohost.com%2flogin.aspx%3fdirect%3dtrue%26db%3dnlebk%26AN%3d979529%26site%3dehost-live%26scope%3dsite&ebv=EK&ppid=Page-__-84))]
+
+---
+# OLS in Statsmodels
+
+--
+count:false
+- OLS : Ordinary Least Squares
+
+--
+count:false
+.smaller[
+```python
+import statsmodels.api as sm
+
+X = tips['total_bill']         # independent variable
+X = sm.add_constant(X)         # bias term
+
+y = tips['tip']                # dependent variable
+
+model_slr = sm.OLS(y,X).fit()  # initialize the model and fit
+```]
+
+--
+count:false
+.smaller[
+```python
+model_slr.params
+```]
+.smaller[
+```
+const         0.920270  # alpha
+total_bill    0.105025  # beta
+dtype: float64
+```]
+
+--
+count:false
+.smallest[
+[ols documentation](https://www.statsmodels.org/dev/examples/notebooks/generated/ols.html)
+]
+
+---
+# Interpreting Coefficients
+
+.smaller[
+```
+const         0.920270  # alpha
+total_bill    0.105025  # beta
+dtype: float64
+```]
+
+
+--
+count:false
+.center[
+tips = 0.11 * total_bill + 0.92]
+
+<br>
+--
+count:false
+- What are tips when total_bill = 0?
+--
+count:false
+    - tips = .92 (tips start at about $1)
+
+
+--
+count:false
+- How do changes in total_bill affect tip?
+--
+count:false
+    - when we increase total_bill by 1
+--
+count:false
+    - tips go up 11 cents
+
+
+---
+# Plotting the Fit
+
+```python
+y_hat = model_slr.predict(np.array([[1,0],[1,50]]))
+
+ax = sns.scatterplot(tips.total_bill,tips.tip);
+ax.plot([0,50],y_hat);
+```
+.center[
+![:scale 50%](images/fit_plot.png)]
+
+
+---
+# Evaluating Fit: Residuals
+
+--
+count:false
+- Residuals : $y - \hat{y}$
+- We we like to see normally distributed error
+
+.smallest[
+```python
+x_obs = np.random.rand(500)                              # our observed x values
+y_obs = 1*x_obs + 0 + np.random.normal(0,1.0,size=(500)) # observed y, with error
+y_hat = 1*x_obs + 0                                      # a very good guess
+resid_ = y_obs - y_hat                                   # residuals
+ax = sns.scatterplot(y_hat,resid_);
+ax.set_xlabel('y_hat'); ax.set_ylabel('residual');
+```]
+.center[![](images/residplot_normal.png)]
+
+---
+# Evaluating Fit: Residuals
+
+.smaller[
+```python
+ax = sns.scatterplot(modle_slr.predict(),model_slr.resid/np.std(model_slr.resid))
+ax.set_ylabel('standardized residual');
+```]
+.center[![:scale 50%](images/tips_resid.png)]
+
+[Interpreting residual plots](http://docs.statwing.com/interpreting-residual-plots-to-improve-your-regression/)
+
+---
+# Evaluating Fit: R-Squared
+
+- **R-Squared** or **Coefficient of Determination** :
+.smaller[
+    - **Fraction of the total variation** in the **dependent variable** captured by **the model**]
+
+
+
+--
+count:false
+- $\bar{y} = \frac{1}{n}\sum\_{i=1}^n y\_i$
+
+
+--
+count:false
+- $SS\_{tot} = \frac{1}{n}\sum\_{i}\left(y_i - \bar{y}\right)^2$
+
+
+
+--
+count:false
+- $SS\_{res} = \frac{1}{n}\sum\_{i}\left(y_i - \hat{y}\_i\right)^2$
+
+
+--
+count:false
+- $R^2 = 1 - \frac{SS\_{res}}{SS_{tot}}$
+
+
+--
+count:false
+- Max: 1, all variation captured
+
+--
+count:false
+- Min: ?
+
+--
+count:false
+```python
+model_slr.rsquared # 0.457
+```
+
+---
+# Multiple Linear Regression
+
+--
+count:false
+- Including multiple independent variables
+
+--
+count:false
+.center[
+$y\_i = \beta\_0 + \beta\_1 x\_{i1} + \beta\_2 x\_{i2} + \ldots + \beta\_m x\_{im} + \varepsilon\_i$]
+
+Note: $\beta_0 \equiv \alpha$
+
+
+
+--
+count:false
+- Ex: 
+.center[
+`tips = beta_0 + beta_1 total_bill + beta_2 size`
+]
+
+--
+count:false
+.smaller[
+```python
+X = tips[['total_bill','size']]
+X = sm.add_constant(X)
+
+y = tips['tip']
+
+model_mlr = sm.OLS(y,X).fit()
+```]
+
+
+--
+count:false
+- Note: 'multivarariate' usually refers to multiple *dependent* variabels
+
+---
+# MLR: Interpreting Coefficients 
+
+```python
+model_mlr.params
+```
+```
+const         0.668945
+total_bill    0.092713
+size          0.192598
+dtype: float64
+```
+
+--
+count:false
+- If we hold everything else constant, what effect does the variable have
+
+--
+count:false
+- If `size` is held constant, a rise of 1 total_bill -> rise of .09 tip
+
+--
+count:false
+- If `total_bill` is held constant, a rise of 1 size -> rise of .19 tip
+
+--
+count:false
+- Can add interaction terms to allow both to move
+    - Ex: total_bill * size
+    - more complicated to interpret
+
+---
+# Colinarity
+
+--
+count:false
+- MLR assumes features are linearly independent
+--
+count:false
+- Can't rewrite one column as a weighted sum of the others
+--
+count
+- Ex: `entrees ordered` will likely be linearly related to `size`
+
+
+--
+count:false
+- Issue: Model won't know how to estimate $\beta$
+    - If we add to one and subtract from the other, there will be no change
+
+--
+count:false
+- Try to remove obvious colinearity
+    - can use correlation and linear regression to detect
+
+--
+count:false
+- Important to consider when constructing categorical features
+
+---
+# MLR: R-Squared
+
+--
+count:false
+- $R^2 = 1 - \frac{\frac{1}{n}\sum\_{i}\left(y\_i - \hat{y}\_i\right)^2}{\frac{1}{n}\sum\_{i}\left(y_i - \bar{y}\right)^2}$
+
+
+--
+count:false
+- an increase in the number of features will only increase $R^2$
+
+--
+count:false
+- Adjusted $R^2$: account for the number of features
+
+--
+count:false
+
+$R\_{adj}^2 = 1 - (1-R^2)\frac{n - 1}{n-m-1}$
+
+- $n$ is number of observations, $m$ the number of features
+
+
+--
+count:false
+.smaller[
+```python
+model_mlr.rsquared, model_mlr.rsquared_adj
+```]
+.smaller[
+```
+0.468, 0.463
+```]
+
+---
+#Statsmodels Summary
+.smallest[
+```python
+model_mlr.summary()
+```]
+.center.smallest[```
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                    tip   R-squared:                       0.468
+Model:                            OLS   Adj. R-squared:                  0.463
+Method:                 Least Squares   F-statistic:                     105.9
+Date:                Mon, 30 Sep 2019   Prob (F-statistic):           9.67e-34
+Time:                        11:16:52   Log-Likelihood:                -347.99
+No. Observations:                 244   AIC:                             702.0
+Df Residuals:                     241   BIC:                             712.5
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const          0.6689      0.194      3.455      0.001       0.288       1.050
+total_bill     0.0927      0.009     10.172      0.000       0.075       0.111
+size           0.1926      0.085      2.258      0.025       0.025       0.361
+==============================================================================
+Omnibus:                       24.753   Durbin-Watson:                   2.100
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               46.169
+Skew:                           0.545   Prob(JB):                     9.43e-11
+Kurtosis:                       4.831   Cond. No.                         67.6
+==============================================================================
+```]
+
+---
+# Aside: Interpretation Vs. Prediction
+
+--
+count:false
+- Interpretation: Explain how observed features relate to observed target
+
+--
+count:false
+- Prediction: Given new features, can we generate a prediction
+
+
+--
+count:false
+- Often asked to do one or the other, be clear which is most important
+
+
+--
+count:false
+- In prediction, may not worry about interpreting the model!
+
+--
+count:false
+- There is a push to change this, increase interpretability
+
+---
+class:middle
+
+# Questions re Regression?
+
+---
+# Classification
+
+--
+count:false
+- **Regression** -> predict a real value (Ex. predict tip)
+
+--
+count:false
+- **Classification** -> predict a discrete class, category
+
+
+--
+count:false
+- **Binary** classification : two categories 
+    - pos/neg, cat/dog, win/lose
+--
+count:false
+- **Multiclass** classification : more than two categories 
+    - red/green/blue, flower type, integer 0-10
+
+--
+count:false
+- **Multilabel** classification : can assign more than one label to an instance
+    - paper topics, entities in image
+
+
+---
+# Tips as Classification
+
+--
+count:false
+Instead of tip amount, let's look at high or low tips.
+
+--
+count:false
+.smaller[
+```python
+def map_tips(x):
+    return True if x > tips.tip.median() else False
+
+tips['tip_high'] = tips.tip.apply(map_tips)
+```]
+
+--
+count:false
+.center[![](images/tips_lowhigh.png)]
+
+---
+# Tips as Classification
+.center[![](images/tips_lowhigh_slr.png)]
+
+--
+count:false
+- want a number between 0 and 1
+--
+count:false
+- want something that looks like a threshold
+
+---
+# Logistic Regression
+
+- $logistic(x) = \frac{1}{1+e^{(-x)}}$
+
+--
+count:false
+.smallest[
+```python
+def logistic(x):
+    return 1 / (1+np.exp(-x))
+
+x = np.linspace(-10,10,1000)
+plt.plot(x,logistic(x));
+plt.xlabel('x');plt.ylabel('logistic(x)');
+```]
+
+.center[![](images/logistic.png)]
+
+---
+# Logistic Regression with sklearn
+
+Our problem (with one feature) becomes:
+
+.center[$y_i = logistic(\beta_0 + \beta_1 x_i) + \varepsilon_i$]
+
+
+--
+count:false
+```python
+from sklearn.linear_model import LogisticRegression
+
+lr = LogisticRegression(fit_intercept=True)
+lr.fit(tips.total_bill.values.reshape(-1,1),tips.tip_high)
+print(f'alpha = {lr.intercept_[0]:0.2f}')
+print(f'beta_1 = {lr.coef_[0][0]:0.2f}')
+```
+```
+beta_0 = -2.96
+beta_1 = 0.16
+```
+
+---
+# Interpreting Logistic Regression
+
+--
+count:false
+
+- After some math
+
+.center[
+$\log\left(\frac{y\_i}{1-y\_i}\right) = \beta\_0 + \beta\_1 x\_{i1}$]
+
+--
+count:false
+- log odds ratio of p(y=1)/p(y=0)
+
+--
+count:false
+
+- odds range from 0 to positive infinity
+
+--
+count:false
+- odds(5) -> 5/1 -> 5 out of 6 times -> .83
+
+--
+count:false
+- odds(.2) -> 1/5 -> 1 out of 6 times -> .16
+
+--
+count:false
+See [here](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faq-how-do-i-interpret-odds-ratios-in-logistic-regression/) for a good explanation
+
+---
+class:middle
+
+# Questions?
+
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
