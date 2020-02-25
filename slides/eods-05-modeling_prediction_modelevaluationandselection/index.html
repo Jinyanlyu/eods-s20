@@ -1228,7 +1228,7 @@ count:false
 ```python
 # or just let sklearn do it
 from sklearn.metrics import precision_recall_curve
-precision, recall, thresholds = precision_recall_curve(y_train, y_pred_logr[:,1])
+precision, recall, thresholds = precision_recall_curve(y_train, y_pred[:,1])
 ```]
 
 ---
@@ -1358,7 +1358,7 @@ plot_roc(curves);
 
 .smallest[
 ```python
-fpr\_dummy, tpr\_dummy, \_ = roc_curve(y_train, dc.predict\_proba(X\_train)[:,1]) # Compare dummy
+fpr\_dummy, tpr\_dummy, \_ = roc_curve(y_train, dummy_cl.predict\_proba(X\_train)[:,1]) # Compare dummy
 curves.append((fpr_dummy,tpr_dummy,'dummy')); plot_roc(curves);
 ```]
 .center[![:scale 45%](images/roc_curve_02.png)]
