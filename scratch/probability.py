@@ -11,37 +11,9 @@ def normal_pdf(x: float, mu: float = 0, sigma: float = 1) -> float:
     return (math.exp(-(x-mu) ** 2 / 2 / sigma ** 2) / (SQRT_TWO_PI * sigma))
 
 import matplotlib.pyplot as plt
-xs = [x / 10.0 for x in range(-50, 50)]
-plt.plot(xs,[normal_pdf(x,sigma=1) for x in xs],'-',label='mu=0,sigma=1')
-plt.plot(xs,[normal_pdf(x,sigma=2) for x in xs],'--',label='mu=0,sigma=2')
-plt.plot(xs,[normal_pdf(x,sigma=0.5) for x in xs],':',label='mu=0,sigma=0.5')
-plt.plot(xs,[normal_pdf(x,mu=-1)   for x in xs],'-.',label='mu=-1,sigma=1')
-plt.legend()
-plt.title("Various Normal pdfs")
-# plt.show()
-
-
-# plt.savefig('im/various_normal_pdfs.png')
-plt.gca().clear()
-plt.close()
-plt.clf()
 
 def normal_cdf(x: float, mu: float = 0, sigma: float = 1) -> float:
     return (1 + math.erf((x - mu) / math.sqrt(2) / sigma)) / 2
-
-xs = [x / 10.0 for x in range(-50, 50)]
-plt.plot(xs,[normal_cdf(x,sigma=1) for x in xs],'-',label='mu=0,sigma=1')
-plt.plot(xs,[normal_cdf(x,sigma=2) for x in xs],'--',label='mu=0,sigma=2')
-plt.plot(xs,[normal_cdf(x,sigma=0.5) for x in xs],':',label='mu=0,sigma=0.5')
-plt.plot(xs,[normal_cdf(x,mu=-1) for x in xs],'-.',label='mu=-1,sigma=1')
-plt.legend(loc=4) # bottom right
-plt.title("Various Normal cdfs")
-# plt.show()
-
-
-plt.close()
-plt.gca().clear()
-plt.clf()
 
 def inverse_normal_cdf(p: float,
                        mu: float = 0,
@@ -101,6 +73,37 @@ def binomial_histogram(p: float, n: int, num_points: int) -> None:
 #     plt.show()
 
 def main():
+
+
+    xs = [x / 10.0 for x in range(-50, 50)]
+    plt.plot(xs,[normal_pdf(x,sigma=1) for x in xs],'-',label='mu=0,sigma=1')
+    plt.plot(xs,[normal_pdf(x,sigma=2) for x in xs],'--',label='mu=0,sigma=2')
+    plt.plot(xs,[normal_pdf(x,sigma=0.5) for x in xs],':',label='mu=0,sigma=0.5')
+    plt.plot(xs,[normal_pdf(x,mu=-1)   for x in xs],'-.',label='mu=-1,sigma=1')
+    plt.legend()
+    plt.title("Various Normal pdfs")
+    # plt.show()
+    
+    
+    # plt.savefig('im/various_normal_pdfs.png')
+    plt.gca().clear()
+    plt.close()
+    plt.clf()
+    
+    xs = [x / 10.0 for x in range(-50, 50)]
+    plt.plot(xs,[normal_cdf(x,sigma=1) for x in xs],'-',label='mu=0,sigma=1')
+    plt.plot(xs,[normal_cdf(x,sigma=2) for x in xs],'--',label='mu=0,sigma=2')
+    plt.plot(xs,[normal_cdf(x,sigma=0.5) for x in xs],':',label='mu=0,sigma=0.5')
+    plt.plot(xs,[normal_cdf(x,mu=-1) for x in xs],'-.',label='mu=-1,sigma=1')
+    plt.legend(loc=4) # bottom right
+    plt.title("Various Normal cdfs")
+    # plt.show()
+    
+    
+    plt.close()
+    plt.gca().clear()
+    plt.clf()
+
     import enum, random
     
     # An Enum is a typed set of enumerated values. We can use them
