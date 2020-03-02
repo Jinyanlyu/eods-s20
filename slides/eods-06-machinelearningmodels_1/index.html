@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Machine Learning Models I</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - S2020
+
+# Machine Learning Models I
+
+3/2/2020
+
+---
+# Review: Steps to Choosing a Model
+
+- Create Held-Aside Set (Train/Test Split)
+- Determine Metric (or combination of metrics)
+- Get a Baseline for comparison
+- Use Cross-Validation to fit Hyperparameters and Choose Model
+- Evaluate Chosen Model on Held-Aside Set
+
+---
+# Review Classification Metrics
+
+- Confusion Matrix
+- Accuracy/Error
+- Precision
+- Recall
+- $F_1$ Score
+- ROC
+- ROC AUC
+
+
+---
+### Supervised: Model Families
+--
+count:false
+- Distance Based
+    - K-Nearest Neighbor
+--
+count:false
+- Probabilistic
+    - Naive Bayes
+--
+count:false
+- Linear
+    - LinearRegression/Logistic Regression/SVM
+--
+count:false
+- Tree Based
+    - Decision Trees
+--
+count:false
+- Network Based
+    - Neural Networks
+
+
+---
+# Prediction using SL: Classification
+
+--
+count:false
+- Given an item $x_i$, predict a value $\hat{y}_i$
+
+.smallest[
+- Ex: Can we predict a wine's class from a few of it's features?]
+
+.smallest[
+```python
+from sklearn import datasets
+wine = datasets.load_wine()
+X = pd.DataFrame(wine.data,columns=wine.feature_names)
+y = wine.target
+```]
+.smallest[
+```python
+# keep only class 0 and 1 and two columns of X and standardize X
+features = wine.feature_names[3:5]
+X = X.iloc[y &lt; 2,3:5].apply(lambda x: (x-x.mean())/x.std()).values
+y = y[y &lt; 2]
+X.shape,y.shape
+```]
+.smallest[
+```
+((130, 2), (130,))
+```]
+.smallest[
+```python
+features
+```]
+.smallest[
+```
+['alcalinity_of_ash', 'magnesium']
+```
+]
+
+---
+### Example: Wine
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(8,8))
+sns.scatterplot(X[y==0,0],X[y==0,1],label='class 0',marker='s',s=80);
+sns.scatterplot(X[y==1,0],X[y==1,1],label='class 1',marker='^',s=80);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[
+![](images/wine_2class.png)]
+
+---
+# k-Nearest Neighbor
+
+> What category do most of the $k$ nearest neighbors belong to
+
+<br>
+<br>
+--
+count:false
+.center[![](images/KnnClassification.svg.png)]
+
+---
+# k-Nearest Neighbor
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+knn = KNeighborsClassifier()
+knn.fit(X,y)
+```
+```
+KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='euclidean',
+                     metric_params=None, n_jobs=None, n_neighbors=3, p=2,
+                     weights='uniform')
+```
+
+---
+#k-Nearest Neighbor
+
+.smallest[
+```python
+from mlxtend.plotting import plot_decision_regions
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=knn);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_knn.png)]
+
+
+---
+#k-Nearest Neighbor
+
+###Pros and Cons of kNN
+--
+count:false
+- fast to train
+--
+count:false
+- potentially slow to predict
+--
+count:false
+- need to deal with categorical variables
+--
+count:false
+- curse of dimensionality
+
+--
+count:false
+###Need to choose
+- number of neighbors
+- distance function
+
+
+
+---
+# Train/Test Split
+
+--
+count:false
+.smaller[
+```python
+X.shape, y.shape # original dataset
+```]
+.smaller[
+```
+((130, 2), (130,))
+```]
+
+--
+count:false
+.smaller[
+```python
+# split into a train and test set
+X_train,X_test,y_train,y_test = train_test_split(X_tips, y_tips, random_state=123)
+```]
+
+--
+count:false
+.smaller[
+```python
+X_train.shape, X_test.shape
+```]
+.smaller[
+```
+((97, 2), (33, 2))
+```]
+
+--
+count:false
+.smaller[
+```python
+y_train.shape, y_test.shape
+```]
+.smaller[
+```
+((97,), (33,))
+```]
+
+--
+count:false
+.smaller[
+```python
+f'{X_test.shape[0]/X.shape[0]:0.2f}'
+```]
+.smaller[
+```
+0.25
+```]
+
+
+---
+# ROC Curve
+
+- **R**eceiver **O**perating **C**haracteristic
+--
+count:false
+    - displays FPR vs TPR
+--
+count:false
+    - or (1-Specificity) vs. Sensitivity
+
+
+--
+count:false
+- True Positive Rate (TPR) = Sensitivity = Recall = $\frac{TP}{(TP + FN)}$
+
+
+--
+count:false
+- False Positive Rate (FPR) = (1 - Specificity) = $\frac{FP}{(FP + TN)}$
+
+
+--
+count:false
+- True Negative Rate (TNR) = Specificity = $\frac{TN}{(TN + FP)}$
+
+
+---
+# ROC Curve
+
+```python
+# again sklearn to the rescue
+from sklearn.metrics import roc_curve
+
+fpr_knn20, tpr_knn20, _ = roc_curve(y_train, y_pred[:,1])
+```
+
+---
+# ROC Curve 
+
+```python
+def plot_roc(curves):
+    fig,ax = plt.subplots(1,1,figsize=(6,6))
+    lw = 2
+    for fpr,tpr,model_name in curves:
+        l1, = ax.plot(fpr, tpr, lw=lw, label=model_name)
+    ax.plot([0, 1], [0, 1], color='k', lw=lw, linestyle='--')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_aspect('equal', 'box')
+    ax.set_title('Receiver operating characteristic example')
+    ax.legend()
+```
+
+---
+# ROC Curve
+
+.smallest[
+```python
+curves = [(fpr_knn20,tpr_knn20,'knn20')]
+plot_roc(curves);
+```]
+.center[![:scale 45%](images/roc_curve_01.png)]
+
+---
+# ROC Curve
+
+.smallest[
+```python
+fpr\_dummy, tpr\_dummy, \_ = roc_curve(y_train, dummy_cl.predict\_proba(X\_train)[:,1]) # Compare dummy
+curves.append((fpr_dummy,tpr_dummy,'dummy')); plot_roc(curves);
+```]
+.center[![:scale 45%](images/roc_curve_02.png)]
+
+---
+# ROC Curve
+.smallest[
+```python
+for k in [3,10]: 
+    fpr, tpr, \_ = roc_curve(y_train,KNeighborsClassifier(n_neighbors=k).fit(X_train,y_train).predict_proba(X_train)[:,1])
+    curves.append((fpr,tpr,'knn'+str(k)))
+plot_roc(curves);
+```]
+.center[![:scale 40%](images/roc_curve_03.png)]
+
+---
+# ROC AUC
+
+--
+count:false
+- But again, we'd like one number to optimize
+
+--
+count:false
+- **A**rea **U**nder the **C**urve
+
+--
+count:false
+```python
+from sklearn.metrics import roc_auc_score
+```
+--
+count:false
+```python
+knn3 = KNeighborsClassifier(n_neighbors=3).fit(X_train,y_train)
+for name,model in [('dummy',dummy_cl),('knn20',knn20),('knn3',knn3)]:
+    y_pred = model.predict_proba(X_train)
+    auc = roc_auc_score(y_train,y_pred[:,1])
+    print('{:5s} auc = {:0.3f}'.format(name,auc))
+```
+```
+dummy auc = 0.500
+knn20 auc = 0.883
+knn3  auc = 0.948
+```
+
+
+
+---
+# Regression
+
+- But what about models to predict a real value?
+
+- Example: predict tips from total_bill
+
+.smaller[
+```python
+tips = sns.load_dataset('tips')
+tips.shape
+```
+```
+(244, 7)
+```]
+--
+count:false
+
+.smaller[
+```python
+tips.head(5)
+```]
+![:scale 50%](images/tips_head.png)
+
+---
+# Correlation
+
+- **Question:** are total_bill and tips correlated?
+
+--
+count:false
+.smallest[
+```python
+sns.jointplot(x='total_bill',y='tip',data=tips);
+```]
+.center[
+![](images/tips_totalbill_joint.png)]
+
+---
+# Aside: Pearson Corr Coef.
+
+- **Question:** are total_bill and tips correlated? 
+--
+count:false
+- Could calculate Pearson Correlation Coefficient
+--
+count:false
+- Assumes normally distributed data! (which is not true here)
+
+--
+count:false
+```python
+from scipy.stats import pearsonr
+
+r,p = pearsonr(tips.total_bill,tips.tip)
+print(f'r: {r:.2f}, p: {p:.2f}')
+```
+```
+r: 0.68, p: 0.00
+```
+
+
+<br>
+--
+count:false
+.smallest[
+[On the Effects of Non-Normality on the Distribution of the Sample Product-Moment Correlation Coefficient](https://www.jstor.org/stable/2346598?seq=1#page_scan_tab_contents)
+]
+
+---
+# Obligitory Correlation vs. Causation
+
+.center[![](images/correlation.png)]
+
+--
+count:false
+- correlation does not mean causation!
+
+--
+count:false
+- causal inference
+--
+count:false
+    - controlled experiment
+--
+count:false
+    - control for confounding variables
+
+
+---
+# Spurious Correlation
+
+--
+count:false
+- Also, look hard enough and you'll find correlation.
+    - See [spurious correlations](https://www.tylervigen.com/spurious-correlations) for examples
+--
+count:false
+![](images/spurious_correlation.png)
+
+
+
+---
+#Linear Relationship
+
+- Is there a linear relationship between total_bill and tips?
+
+--
+count:false
+.smallest[
+```python
+sns.jointplot(x='total_bill',y='tip',data=tips, kind='reg');
+```]
+.center[
+![](images/tips_totalbill_joint_reg.png)]
+]
+
+
+---
+#Simple Linear Regression
+
+<br>
+--
+count:false
+.center[
+$\Large y_i = \beta x_i + \alpha + \varepsilon_i$ 
+]
+
+
+<br>
+--
+count:false
+- **$y_i$** : dependent, endogenous, target, label (Ex: `tips`)
+
+--
+count:false
+- **$x_i$** : independent, exogenous , feature, attribute (Ex: `total_bill`)
+
+--
+count:false
+- **$\beta$** : coefficient, slope
+
+--
+count:false
+- **$\alpha$** : bias term, intercept
+
+--
+count:false
+- **$\varepsilon_i$** : error, hopefully small, often assumed $\mathcal{N}(0,1)$
+
+
+--
+count:false
+- Want to find values for $\beta$ and $\alpha$ that best fit the data.
+
+
+---
+#Finding $\beta$ and $\alpha$
+
+--
+count:false
+- **prediction**: $\hat{y}_i = f(x_i) = \beta x_i + \alpha$
+
+--
+count:false
+
+- **error**: $error(y_i,\hat{y}_i) = y_i - \hat{y}_i$
+
+--
+count:false
+
+- **sum of squared errors**: $\sum_{i=1:n}{\left(y_i - \hat{y}_i\right)^2}$
+
+
+--
+count:false
+- **least squares**: make the sum of squared errors as small as possible
+
+
+--
+count:false
+- **gradient descent**: minimize error by following the gradient wrt $\beta,\alpha$
+--
+count:false
+    - can sometime be optimized in closed form
+--
+count:false
+    - often done iteratively
+
+---
+#Aside: Gradient Descent
+
+--
+count:false
+- Want to maximize or minimize something (Ex: squared error)
+
+--
+count:false
+- **Gradient** : direction, vector of partial derivatives
+--
+count:false
+    - can get complicated, will often estimate this
+
+--
+count:false
+- **Gradient Descent** : take steps wrt the direction of the gradient 
+--
+count:false
+    - **maximize** : in the direction of the gradient
+--
+count:false
+    - **minimize** : in the opposite direction of the gradient
+
+--
+count:false
+- **Global Maximum/Minimum** : the single best solution
+
+--
+count:false
+- **Local Maximum/Minimum** : the best solution in the neighborhood
+
+
+---
+#Aside: Gradient Descent
+
+.center[
+![](images/gradient_descent.png)]
+
+- Finding a global min using gradient descent
+
+.smallest[
+- From Data Science From Scratch ([Chapter 8](https://ezproxy.cul.columbia.edu/login?qurl=https%3a%2f%2fsearch.ebscohost.com%2flogin.aspx%3fdirect%3dtrue%26db%3dnlebk%26AN%3d979529%26site%3dehost-live%26scope%3dsite&ebv=EK&ppid=Page-__-84))]
+
+---
+# OLS in Statsmodels
+
+--
+count:false
+- OLS : Ordinary Least Squares
+
+--
+count:false
+.smaller[
+```python
+import statsmodels.api as sm
+
+X = tips['total_bill']         # independent variable
+X = sm.add_constant(X)         # bias term
+
+y = tips['tip']                # dependent variable
+
+model_slr = sm.OLS(y,X).fit()  # initialize the model and fit
+```]
+
+--
+count:false
+.smaller[
+```python
+model_slr.params
+```]
+.smaller[
+```
+const         0.920270  # alpha
+total_bill    0.105025  # beta
+dtype: float64
+```]
+
+--
+count:false
+.smallest[
+[ols documentation](https://www.statsmodels.org/dev/examples/notebooks/generated/ols.html)
+]
+
+---
+# Interpreting Coefficients
+
+.smaller[
+```
+const         0.920270  # alpha
+total_bill    0.105025  # beta
+dtype: float64
+```]
+
+
+--
+count:false
+.center[
+tips = 0.11 * total_bill + 0.92]
+
+<br>
+--
+count:false
+- What are tips when total_bill = 0?
+--
+count:false
+    - tips = .92 (tips start at about $1)
+
+
+--
+count:false
+- How do changes in total_bill affect tip?
+--
+count:false
+    - when we increase total_bill by 1
+--
+count:false
+    - tips go up 11 cents
+
+
+---
+# Plotting the Fit
+
+```python
+y_hat = model_slr.predict(np.array([[1,0],[1,50]]))
+
+ax = sns.scatterplot(tips.total_bill,tips.tip);
+ax.plot([0,50],y_hat);
+```
+.center[
+![:scale 50%](images/fit_plot.png)]
+
+
+---
+# Evaluating Fit: Residuals
+
+--
+count:false
+- Residuals : $y - \hat{y}$
+- We we like to see normally distributed error
+
+.smallest[
+```python
+x\_obs = np.random.rand(500)                              # our observed x values
+y\_obs = 1\*x\_obs + 0 + np.random.normal(0,1.0,size=(500)) # observed y, with error
+y\_hat = 1\*x\_obs + 0                                      # a very good guess
+resid\_ = y\_obs - y\_hat                                   # residuals
+ax = sns.scatterplot(y\_hat,resid\_);
+ax.set\_xlabel('y\_hat'); ax.set\_ylabel('residual');
+```]
+.center[![](images/residplot_normal.png)]
+
+---
+# Evaluating Fit: Residuals
+
+.smaller[
+```python
+ax = sns.scatterplot(model_slr.predict(),model_slr.resid/np.std(model_slr.resid))
+ax.set_ylabel('standardized residual');
+```]
+.center[![:scale 50%](images/tips_resid.png)]
+
+[Interpreting residual plots](http://docs.statwing.com/interpreting-residual-plots-to-improve-your-regression/)
+
+---
+# Evaluating Fit: R-Squared
+
+- **R-Squared** or **Coefficient of Determination** :
+.smaller[
+    - **Fraction of the total variation** in the **dependent variable** captured by **the model**]
+
+
+
+--
+count:false
+- $\bar{y} = \frac{1}{n}\sum\_{i=1}^n y\_i$
+
+
+--
+count:false
+- $SS\_{tot} = \frac{1}{n}\sum\_{i}\left(y_i - \bar{y}\right)^2$
+
+
+
+--
+count:false
+- $SS\_{res} = \frac{1}{n}\sum\_{i}\left(y_i - \hat{y}\_i\right)^2$
+
+
+--
+count:false
+- $R^2 = 1 - \frac{SS\_{res}}{SS_{tot}}$
+
+
+--
+count:false
+- Max: 1, all variation captured
+
+--
+count:false
+- Min: ?
+
+--
+count:false
+```python
+model_slr.rsquared # 0.457
+```
+
+---
+# Multiple Linear Regression
+
+--
+count:false
+- Including multiple independent variables
+
+--
+count:false
+.center[
+$y\_i = \beta\_0 + \beta\_1 x\_{i1} + \beta\_2 x\_{i2} + \ldots + \beta\_m x\_{im} + \varepsilon\_i$]
+
+Note: $\beta_0 \equiv \alpha$
+
+
+
+--
+count:false
+- Ex: 
+.center[
+`tips = beta_0 + beta_1 total_bill + beta_2 size`
+]
+
+--
+count:false
+.smaller[
+```python
+X = tips[['total_bill','size']]
+X = sm.add_constant(X)
+
+y = tips['tip']
+
+model_mlr = sm.OLS(y,X).fit()
+```]
+
+
+--
+count:false
+- Note: 'multivarariate' usually refers to multiple *dependent* variabels
+
+---
+# MLR: Interpreting Coefficients 
+
+```python
+model_mlr.params
+```
+```
+const         0.668945
+total_bill    0.092713
+size          0.192598
+dtype: float64
+```
+
+--
+count:false
+- If we hold everything else constant, what effect does the variable have
+
+--
+count:false
+- If `size` is held constant, a rise of 1 total_bill -> rise of .09 tip
+
+--
+count:false
+- If `total_bill` is held constant, a rise of 1 size -> rise of .19 tip
+
+--
+count:false
+- Can add interaction terms to allow both to move
+    - Ex: total_bill * size
+    - more complicated to interpret
+
+---
+# Colinarity
+
+--
+count:false
+- MLR assumes features are linearly independent
+--
+count:false
+- eg: Can't rewrite one column as a weighted sum of the others
+--
+count:false
+- Ex: `entrees ordered` will likely be linearly related to `size`
+
+
+--
+count:false
+- Issue: Model won't know how to estimate $\beta$
+    - If we add to one and subtract from the other, there will be no change
+
+--
+count:false
+- Try to remove obvious colinearity
+    - can use correlation and linear regression to detect
+
+--
+count:false
+- Important to consider when constructing categorical features
+
+---
+# MLR: R-Squared
+
+--
+count:false
+- $R^2 = 1 - \frac{\frac{1}{n}\sum\_{i}\left(y\_i - \hat{y}\_i\right)^2}{\frac{1}{n}\sum\_{i}\left(y_i - \bar{y}\right)^2}$
+
+
+--
+count:false
+- an increase in the number of features will only increase $R^2$
+
+--
+count:false
+- Adjusted $R^2$: account for the number of features
+
+--
+count:false
+
+$R\_{adj}^2 = 1 - (1-R^2)\frac{n - 1}{n-m-1}$
+
+- $n$ is number of observations, $m$ the number of features
+
+
+--
+count:false
+.smaller[
+```python
+model_mlr.rsquared, model_mlr.rsquared_adj
+```]
+.smaller[
+```
+0.468, 0.463
+```]
+
+---
+#Statsmodels Summary
+.smallest[
+```python
+model_mlr.summary()
+```]
+.center.smallest[```
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                    tip   R-squared:                       0.468
+Model:                            OLS   Adj. R-squared:                  0.463
+Method:                 Least Squares   F-statistic:                     105.9
+Date:                Mon, 30 Sep 2019   Prob (F-statistic):           9.67e-34
+Time:                        11:16:52   Log-Likelihood:                -347.99
+No. Observations:                 244   AIC:                             702.0
+Df Residuals:                     241   BIC:                             712.5
+Df Model:                           2                                         
+Covariance Type:            nonrobust                                         
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+const          0.6689      0.194      3.455      0.001       0.288       1.050
+total_bill     0.0927      0.009     10.172      0.000       0.075       0.111
+size           0.1926      0.085      2.258      0.025       0.025       0.361
+==============================================================================
+Omnibus:                       24.753   Durbin-Watson:                   2.100
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               46.169
+Skew:                           0.545   Prob(JB):                     9.43e-11
+Kurtosis:                       4.831   Cond. No.                         67.6
+==============================================================================
+```]
+
+---
+# Aside: Interpretation Vs. Prediction
+
+--
+count:false
+- Interpretation: Explain how observed features relate to observed target
+
+--
+count:false
+- Prediction: Given new features, can we generate a prediction
+
+
+--
+count:false
+- Often asked to do one or the other, be clear which is most important
+
+
+--
+count:false
+- In prediction, may not worry about interpreting the model!
+
+--
+count:false
+- There is a push to change this, increase interpretability
+
+---
+class:middle
+
+# Questions re Regression?
+
+---
+# Classification
+
+--
+count:false
+- **Regression** -> predict a real value (Ex. predict tip)
+
+--
+count:false
+- **Classification** -> predict a discrete class, category
+
+
+--
+count:false
+- **Binary** classification : two categories 
+    - pos/neg, cat/dog, win/lose
+--
+count:false
+- **Multiclass** classification : more than two categories 
+    - red/green/blue, flower type, integer 0-10
+
+--
+count:false
+- **Multilabel** classification : can assign more than one label to an instance
+    - paper topics, entities in image
+
+
+---
+# Tips as Classification
+
+--
+count:false
+Instead of tip amount, let's look at high or low tips.
+
+--
+count:false
+.smaller[
+```python
+def map_tips(x):
+    return True if x > tips.tip.median() else False
+
+tips['tip_high'] = tips.tip.apply(map_tips)
+```]
+
+--
+count:false
+.center[![](images/tips_lowhigh.png)]
+
+---
+# Tips as Classification
+.center[![](images/tips_lowhigh_slr.png)]
+
+--
+count:false
+- want a number between 0 and 1
+--
+count:false
+- want something that looks like a threshold
+
+---
+# Logistic Regression
+
+- $logistic(x) = \frac{1}{1+e^{(-x)}}$
+
+--
+count:false
+.smallest[
+```python
+def logistic(x):
+    return 1 / (1+np.exp(-x))
+
+x = np.linspace(-10,10,1000)
+plt.plot(x,logistic(x));
+plt.xlabel('x');plt.ylabel('logistic(x)');
+```]
+
+.center[![](images/logistic.png)]
+
+---
+# Logistic Regression with sklearn
+
+Our problem (with one feature) becomes:
+
+.center[$y_i = logistic(\beta_0 + \beta_1 x_i) + \varepsilon_i$]
+
+
+--
+count:false
+```python
+from sklearn.linear_model import LogisticRegression
+
+lr = LogisticRegression(fit_intercept=True)
+lr.fit(tips.total_bill.values.reshape(-1,1),tips.tip_high)
+print(f'alpha = {lr.intercept_[0]:0.2f}')
+print(f'beta_1 = {lr.coef_[0][0]:0.2f}')
+```
+```
+beta_0 = -2.96
+beta_1 = 0.16
+```
+
+---
+# Interpreting Logistic Regression
+
+--
+count:false
+
+- After some math
+
+.center[
+$\log\left(\frac{y\_i}{1-y\_i}\right) = \beta\_0 + \beta\_1 x\_{i1}$]
+
+--
+count:false
+- log odds ratio of p(y=1)/p(y=0)
+
+--
+count:false
+
+- odds range from 0 to positive infinity
+
+--
+count:false
+- odds(5) -> 5/1 -> 5 out of 6 times -> .83
+
+--
+count:false
+- odds(.2) -> 1/5 -> 1 out of 6 times -> .16
+
+--
+count:false
+See [here](https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faq-how-do-i-interpret-odds-ratios-in-logistic-regression/) for a good explanation
+
+---
+# Logistic Regression on Wine
+
+.smallest[
+```python
+logr = LogisticRegression().fit(X,y)
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=logr);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_logr.png)]
+
+
+---
+# Logistic Regression
+
+### Pros and Cons of Logistic Regression 
+- (relatively) simple
+- interpretable coefficients
+- depends on removal of colinear features
+- can use linear model regularization (ridge, lasso, elasticnet)
+
+--
+count:false
+###Need to choose
+- regularization method
+- weight of regularization
+
+
+---
+# Naive Bayes
+
+--
+count:false
+- Using Bayes rule
+
+.center[
+$P(y|x\_1,\ldots,x\_m) = \frac{P(x\_1,\ldots,x\_m|y)P(y)}{P(x\_1,\ldots,x\_m)}$]
+
+--
+count:false
+- Assume conditional independence of features given label
+
+.center[
+$P(x\_i|y,x\_1,\ldots,x\_{i-1},x\_{i+1},\ldots,x\_m) = P(x\_i|y)$]
+
+--
+count:false
+- And since the denominator is the same across label y, we get
+
+.center[
+$\hat{y} = \arg\max\_y P(y) \prod\_{i=1}^n P(x\_i|y)$]
+
+
+---
+# Naive Bayes
+
+--
+count:false
+- Easy when x's are counts
+    - Multinomial Naive Bayes
+    - assumes multinomial distribution for each label
+
+--
+count:false
+- Can also be used when x is real valued
+    - Gaussian Naive Bayes
+    - assumes gaussian distribution for each label
+
+---
+# Naive Bayes
+
+.smaller[
+```python
+from sklearn.naive_bayes import GaussianNB
+
+gnb = GaussianNB()
+gnb.fit(X,y)
+```]
+.smaller[
+```
+GaussianNB(priors=None, var_smoothing=1e-09)
+```]
+
+---
+# Naive Bayes
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=gnb);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_gnb.png)]
+
+---
+# Naive Bayes
+
+### Pros and Cons of Naive Bayes
+- simple
+- depends on strong independence assumption
+- depends on strong assumption of data distributions
+- data scarcity (when learning)
+
+--
+count:false
+###Need to choose
+- distribution for x
+---
+# Decision Tree
+
+> If we ask a bunch of yes no questions, what answers do we see?
+
+
+.center[![:scale 50%](images/iris_decision_tree.svg)]
+
+---
+# Decision Tree
+
+```python
+from sklearn.tree import DecisionTreeClassifier
+
+dtc = DecisionTreeClassifier()
+dtc.fit(X,y)
+```
+```
+DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,
+                       max_features=None, max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, presort=False,
+                       random_state=None, splitter='best')
+```
+---
+# Decision Tree
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=dtc);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_dt.png)]
+
+
+---
+# Decision Tree
+
+--
+count:false
+How to decide which question to choose? **Reduce Impurity**
+
+--
+count:false
+.smaller[
+For node $m$, representing a region $R\_m$ with $n\_m$ observations:
+
+$$
+p\_{mk} = \frac{1}{n\_m}\sum\_{x\_i \in R\_m}{I(y\_i = k)}
+$$]
+
+
+--
+count:false
+.smaller[
+- Entropy
+
+    $H(X\_m) = -\sum\_{k}{p\_{mk}\log(p\_{mk})}$
+
+    "average level of 'information', 'surprise', or 'uncertainty' in the possible outcomes."]
+
+--
+count:false
+
+.smaller[
+- Gini 
+
+    $H(X\_m) = \sum\_{k}{p\_{mk}(1-p\_{mk})}$
+
+    “how often a randomly chosen element from the set would be incorrectly labeled” ]
+
+---
+# Decision Tree
+
+###Pros and Cons of Decision Trees
+- very interpretable
+- tendency to overfit
+
+--
+count:false
+###Need to choose
+- criteria to choose feature split
+- depth of tree
+
+---
+# Decision Tree
+.smallest[
+```python
+from sklearn.tree import plot_tree
+fig,ax=plt.subplots(1,1,figsize=(12,12))
+plot_tree(dtc);
+```]
+![:scale 100%](images/wine_2class_plotdecisiontree.png)
+
+
+---
+# Ensembles
+
+--
+count:false
+- Wisdom of the crowd
+--
+count:false
+- Can often achieve better performance with collection of learners
+--
+count:false
+- Often use shallow trees as base learners
+
+--
+count:false
+###Common Methods for generating ensembles:
+--
+count:false
+- Bagging (Bootstrap Aggregation)
+    - Random Forest
+--
+count:false
+- Boosting
+    - Gradient Boosting
+--
+count:false
+- Stacking
+
+---
+# Random Forest And GradientBoost
+.center[![:scale 80%](images/Architecture-of-the-random-forest-model.png)]
+
+---
+# Random Forest
+
+- Trees built with bootstrap sample and subsets of features
+
+- Variation with random selection of features (and samples)
+
+.smaller[
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+rfc = RandomForestClassifier()
+rfc.fit(X,y)
+```]
+.smaller[
+```
+RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+                       max_depth=None, max_features='auto', max_leaf_nodes=None,
+                       min_impurity_decrease=0.0, min_impurity_split=None,
+                       min_samples_leaf=1, min_samples_split=2,
+                       min_weight_fraction_leaf=0.0, n_estimators=10,
+                       n_jobs=None, oob_score=False, random_state=None,
+                       verbose=0, warm_start=False)
+                    ```]
+
+---
+# Random Forest
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=rfc);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_rfc.png)]
+
+---
+# Random Forest
+
+--
+count:false
+###Pros and Cons of Gradient Boosting
+- less likely to overfit than decision tree
+- quick to predict, quick to train
+
+--
+count:false
+###Need to choose
+- number of trees
+- number of features per tree
+
+---
+# Gradient Boosting
+
+- Trees built by adding weight to errors
+
+- Variation due to changes in weights on observations
+
+
+.smaller[
+```python
+from sklearn.ensemble import GradientBoostingClassifier
+
+gbc = GradientBoostingClassifier()
+gbc.fit(X,y)
+```]
+
+.smaller[
+```
+GradientBoostingClassifier(criterion='friedman_mse', init=None,
+                           learning_rate=0.1, loss='deviance', max_depth=3,
+                           max_features=None, max_leaf_nodes=None,
+                           min_impurity_decrease=0.0, min_impurity_split=None,
+                           min_samples_leaf=1, min_samples_split=2,
+                           min_weight_fraction_leaf=0.0, n_estimators=100,
+                           n_iter_no_change=None, presort='auto',
+                           random_state=None, subsample=1.0, tol=0.0001,
+                           validation_fraction=0.1, verbose=0,
+                           warm_start=False)
+                           ```]
+
+---
+# Gradient Boosting
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=gbc);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_gbc.png)]
+
+---
+# Gradient Boosting
+
+--
+count:false
+###Pros and Cons of Gradient Boosting
+- pays more attention to difficult regions
+- quick to predict, slow to train
+- tends to work well
+
+--
+count:false
+###Need to choose
+- number of trees
+- max-depth
+
+---
+# Stacking
+
+.center[![](images/modelstacking.png)]
+
+.smallest[
+From https://blogs.sas.com/content/subconsciousmusings/2017/05/18/stacked-ensemble-models-win-data-science-competitions/]
+
+---
+# Stacking
+.smallest[
+```python
+from mlxtend.classifier import StackingClassifier
+
+ensemble = [LogisticRegression(),GaussianNB(),KNeighborsClassifier()]
+stc = StackingClassifier(ensemble,LogisticRegression())
+stc.fit(X,y)
+```]
+
+.smallest[
+```
+StackingClassifier(average_probas=False,
+                   classifiers=[LogisticRegression(C=1.0, class_weight=None,
+                                                   dual=False,
+                                                   fit_intercept=True,
+                                                   intercept_scaling=1,
+                                                   l1_ratio=None, max_iter=100,
+                                                   multi_class='warn',
+                                                   n_jobs=None, penalty='l2',
+                                                   random_state=None,
+                                                   solver='warn', tol=0.0001,
+                                                   verbose=0,
+                                                   warm_start=False),
+                                GaussianNB(priors=None, var_smoothing=1e-09),
+                                KNeighborsClassifi...]
+                   meta_classifier=LogisticRegression(C=1.0, class_weight=None,
+                                                      dual=False,
+                                                      fit_intercept=True,
+                                                      intercept_scaling=1,
+                                                      l1_ratio=None,
+                                                      max_iter=100,
+                                                      multi_class='warn',
+                                                      n_jobs=None, penalty='l2',
+                                                      random_state=None,
+                                                      solver='warn', tol=0.0001,
+                                                      verbose=0,
+                                                      warm_start=False),
+                   store_train_meta_features=False, use_clones=True,
+                   use_features_in_secondary=False, use_probas=False,
+                   verbose=0)
+                   ```]]
+
+---
+# Stacking
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=stc);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_stc.png)]
+
+---
+# Stacking
+
+--
+count:false
+###Pros and Cons of Stacking
+- combines benefits of multiple learning types
+- easy to implement
+- tends to win competitions
+
+--
+count:false
+###Need to choose
+- member learners
+- meta-learner
+
+---
+# But which model is best?
+
+- For classification, .score defaults to accuracy: $\frac{TP + TN}{n}$
+
+--
+count:false
+.smaller[
+```python
+print(f'lr : {lr.score(X,y):.2f}')
+...
+```]
+.smaller[
+```
+*lr : 0.81
+svc: 0.85
+knn: 0.87
+*dtc: 0.98
+mlp: 0.83
+rfc: 0.96
+gbc: 0.97
+stc: 0.87
+```]
+
+--
+count:false
+What are we doing wrong here?
+
+---
+# But which model is best?
+
+- Using train_test_split
+
+.smaller[
+```python
+print(f'lr : {LogisticRegression().fit(X_train,y_train).score(X_test,y_test):.2f}')
+...
+```]
+--
+count:false
+.smaller[
+```
+*lr : 1.00
+svc: 0.92
+knn: 0.92
+*dtc: 0.62
+mlp: 0.92
+rfc: 0.77
+gbc: 0.77
+stc: 0.92
+```]
+
+---
+class:middle
+
+# Questions?
+
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
