@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Machine Learning Models 2</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - S2020
+
+# Machine Learning Models 2
+
+03/30/2020
+
+---
+## Sample of Machine Learning Model Familes
+
+.smallest[
+- Distance Based
+    - K-Nearest Neighbor
+
+- Probabalistic
+    - Naive Bayes
+
+- Tree Based
+    - Decision Trees
+
+- Ensembles
+    - Random Forest
+    - Gradient Boosted Trees
+
+- **Linear**
+    - Linear Regression
+    - Logistic Regression
+    - **Support Vector Machines**
+
+- Network Based
+    - **Perceptron**
+    - **Multilayer Neural Network**]
+
+
+---
+# Linear Models: Linear Regression
+
+$$y = \beta_0 + \beta_1x_1 + \beta_2x_2 + \ldots + \beta_mx_m$$
+
+
+--
+count:false
+or equivalently:
+
+.smaller[
+$$
+\begin{align}
+y &= \sum_{i=0}^m w\_ix\_i  \\\\
+  &= \text{dot}(\mathbf{w},\mathbf{x}) \\\\
+  &= \mathbf{w}^\intercal\mathbf{x}
+\end{align}
+$$
+
+where $x_0 = 1$]
+
+--
+count:false
+<br>
+or in shorthand: $y = w'x = wx$
+
+---
+# Avoiding Underfitting/Overfitting
+
+--
+count:false
+- **Underfitting**: poor generalization due to simplicity
+    - model is not complex enough to learn task
+
+<br>
+--
+count:false
+- **Overfitting**: poor generalization due to complexity
+    - learning noise in training leading to poor generalization
+
+--
+count:false
+- Never train and evaluate on the same set of data!
+    - train test split
+    - cross-validation
+
+--
+count:false
+- Keep the model as simple as possible
+    - Occam's Razor
+---
+# Regularization
+
+--
+count:false
+- Use to avoid overfitting in linear models
+
+- Idea: can we reduce complexity of our linear model (by adding bias)?
+
+.center[
+![](images/Regularization.png)]
+.smallest[https://www.wikiwand.com/en/Regularization_(mathematics)]
+
+---
+# Regularization
+
+We do this by penalizing extreme weights (w).
+
+--
+count:false
+For example:
+
+$$\arg\min\_{w} C(f(w,x),y)$$
+
+--
+count:false
+we add a regularization term:
+
+$$\arg\min\_{w}  C(f(w,x),y) + \alpha g(w)$$
+
+---
+# Regularization
+
+.center[
+![:scale 60%](images/regularization_minimizecost.png)]
+.tiny[Python Machine Learning 3rd Ed., Rachka &amp; Mirjalili]
+
+---
+# Regularization: Ridge
+
+- Coefficients are kept small
+- Uses $L2$ norm: $\Vert w\Vert\_2 = \sqrt{\sum_{j=1}^m w\_j^2}$
+
+--
+count:false
+.center[
+![:scale 40%](images/regularization_L2.png)]
+.tiny[Python Machine Learning 3rd Ed., Rachka &amp; Mirjalili]
+
+---
+# Regularization: LASSO
+
+- Coefficients are (likely) driven to zero
+- Uses $L1$ norm: $\Vert w\Vert\_1 = \sum_{j=1}^m \mid w\_j \mid$
+
+--
+count:false
+.center[
+![:scale 40%](images/regularization_L1.png)]
+.tiny[Python Machine Learning 3rd Ed., Rachka &amp; Mirjalili]
+
+---
+# Regularization: ElasticNet
+- Mixture of $L1$ and $L2$
+- $\lambda L1 + (1-\lambda)L2$
+- introduces a new hyperparameter $\lambda$ or `l1_ratio`
+- $\lambda = 1$ is LASSO
+- $\lambda = 0$ is Ridge
+
+
+--
+count:false
+see notebook for sklearn examples
+
+---
+# Linear Models: Logistic Regression
+
+$$P(y=1|w,x) = \sigma(\mathbf{w}^\intercal\mathbf{x})$$
+
+--
+count:false
+where the **sigmoid** or **logistic function** $\sigma$ is:
+.smaller[
+$$ \sigma(\mathbf{w}^\intercal\mathbf{x}) = \frac{1}{1+e^{(-\mathbf{w}^\intercal\mathbf{x})}} = \frac{e^{(\mathbf{w}^\intercal\mathbf{x})}}{e^{(\mathbf{w}^\intercal\mathbf{x})}+1} $$]
+
+--
+count:false
+
+???
+
+or, equivalently:
+.smaller[
+$$ 
+\text{logit}(P(y=1\mid x)) = \mathbf{w}^\intercal\mathbf{x}
+$$]
+
+ where:
+
+.smaller[
+$$\text{logit}(p) = \log\left[\frac{p}{(1-p)}\right]$$]
+
+--
+count:false
+
+then, to classify:
+
+$$ \hat{y} =\begin{cases}
+1 \text{ if } \sigma(\mathbf{w}^{\intercal}\mathbf{x}) \ge .5 \\\\
+    0 \text{ o.w.}
+\end{cases}
+$$
+
+
+
+---
+# Support Vector Machine
+
+> Find the line/plane that separates our classes with the largest margin
+<br>
+<br>
+.center[
+![](images/svm-optimal-hyperplane.png)
+]
+
+---
+# Support Vector Machine
+
+```python
+from sklearn.svm import SVC
+
+svm_linear = SVC(kernel='linear')
+svm_linear.fit(X,y)
+```
+.smallest[
+```
+*SVC(C=1.0,
+    break_ties=False,
+    cache_size=200,
+    class_weight=None,
+    coef0=0.0,
+    decision_function_shape='ovr',
+    degree=3,
+    gamma='scale',
+*   kernel='linear',
+    max_iter=-1,
+    probability=False,
+    random_state=None,
+    shrinking=True,
+    tol=0.001,
+    verbose=False)
+```]
+
+---
+# Support Vector Machine
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=svm_linear);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_svm_linear.png)]
+
+
+---
+# Support Vector Machine
+
+Kernel trick: map to a higher dimensional space
+
+.center[
+![:scale 60%](images/svm_kernel_trick.png)]
+.tiny[Python Machine Learning 3rd Ed., Rachka &amp; Mirjalili]
+
+---
+# Support Vector Machine
+
+###Pros and Cons of SVM
+--
+count:false
+- slow to learn
+--
+count:false
+- fast to evaluate
+--
+count:false
+- can use kernel trick to learn non-linear functions
+
+--
+count:false
+###Need to choose
+- kernel
+- penalty on error term, C (smaller is more!)
+
+---
+# Perceptron
+
+<br>
+.center[
+![:scale 80%](images/neuron.png)]
+
+---
+# Perceptron
+
+Rosenblatt, 1957
+
+.center[![:scale 60%](images/perceptron.png)]
+
+
+---
+# Perceptron
+
+```python
+from sklearn.linear_model import Perceptron
+
+perceptron = Perceptron()
+perceptron.fit(X,y)
+```
+.smaller[
+```
+*Perceptron(alpha=0.0001,
+           class_weight=None,
+*          early_stopping=False,
+*          eta0=1.0,
+           fit_intercept=True,
+           max_iter=1000, 
+           n_iter_no_change=5,
+           n_jobs=None,
+*          penalty=None,
+           random_state=0,
+           shuffle=True,
+           tol=0.001,
+           validation_fraction=0.1,
+           verbose=0,
+           warm_start=False)
+```]
+
+---
+# Perceptron
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=perceptron);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_perceptron.png)]
+
+
+---
+## Multi-Layer Neural Network
+
+.smallest[
+```python
+from sklearn.neural_network import MLPClassifier
+
+mlp = MLPClassifier()
+mlp.fit(X,y)
+```]
+.smallest[```
+*MLPClassifier(activation='relu',
+*             alpha=0.0001,
+              batch_size='auto',
+              beta_1=0.9,
+              beta_2=0.999,
+              early_stopping=False,
+              epsilon=1e-08,
+*             hidden_layer_sizes=(100,),
+              learning_rate='constant',
+              learning_rate_init=0.001,
+              max_iter=200,
+*             momentum=0.9,
+              n_iter_no_change=10,
+              nesterovs_momentum=True,
+              power_t=0.5,
+              random_state=None,
+              shuffle=True,
+*             solver='adam',
+              tol=0.0001,
+              validation_fraction=0.1,
+              verbose=False,
+              warm_start=False)
+            ```]
+
+---
+# Multi-Layer Neural Network
+.smallest[
+```python
+fig,ax = plt.subplots(1,1,figsize=(6,6))
+plot_decision_regions(X, y, clf=mlp);
+plt.xlabel(features[0]); plt.ylabel(features[1]);
+```]
+.center[![](images/wine_2class_mlp.png)]
+
+---
+## Multi-Layer Neural Network: Activation Functions
+
+.center[
+![:scale 40%](images/nn_activation_functions.png)]
+.tiny[Python Machine Learning 3rd Ed., Rachka &amp; Mirjalili]
+
+
+---
+## Other Neural Network Terms
+
+- Feed-Forward/Back-Propogation
+
+- Batch
+
+- Soft-Max: normalize outputs and treat as probability
+
+- Cross-Entropy: negative log likelihood using softmax
+
+- Dropout: to reduce overfitting, only allow some weights to update
+
+
+
+---
+# Multi-Layer Neural Network
+
+.center[![:scale 90%](images/multi_layer_perceptron.png)]
+
+---
+# Neural Network Packages
+
+.center[
+![](images/tensorflow.png)
+
+![:scale 30%](images/keras.png)
+
+![](images/pytorch.png)]
+
+---
+## Neural Networks
+
+###Pros and Cons of Deep Learning
+- sensitive to initialization and structure
+- high complexity -&gt; needs more data
+- low interpretability
+- can learn complex interactions
+- performs well on tasks involving complex signals (ex images, sound, etc)
+
+--
+count:false
+###Need to choose
+- layers
+- activation function
+- learning rate
+- ...
+
+---
+class:middle
+
+# Questions?
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
