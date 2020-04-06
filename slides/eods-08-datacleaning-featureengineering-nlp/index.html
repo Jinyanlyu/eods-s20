@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Feature Selection, Data Cleaning, Feature Engineering, NLP</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - F2020
+
+# Feature Selection, Data Cleaning, Feature Engineering and NLP
+
+04/06/2020
+
+---
+# In This Lecture:
+
+.left-column[
+.smaller[
+- Data Cleaning
+ - Duplicates
+ - Missing Data
+ - Dummy Variables
+ - Rescaling
+ - Dealing With Skew
+ - Removing Outliers
+
+
+- Feature Engineering
+ - Binning
+ - One-Hot encoding
+ - Derived
+ - Pipelines]]
+
+
+.right-column[
+.smaller[
+- Natural Language Processing
+ - Tokenization
+ - Stemming/Lemmatization
+ - Stopwords
+ - n-grams
+ - BOW
+ - TF
+ - IDF
+ - word2vec
+
+- Feature Selection
+ - Model Based
+ - Low Variance
+ - Univariate
+ - Recursive]]
+
+
+---
+# Data Cleaning
+
+### Why do we need clean data?
+
+--
+count:false
+- Want one row per observation (remove duplicates)
+--
+count:false 
+- Most models cannot handle missing data (remove/fill missing)
+--
+count:false
+- Most models require **fixed length feature vectors** (engineer features)
+
+
+--
+count:false
+- Different models require different types of data  (transformation)
+--
+count:false
+ - Linear models: real valued features with similar scale
+--
+count:false
+ - Distance based: real valued features with similar scale
+--
+count:false
+ - Tree based: can handle real and categorical
+
+---
+# Data Cleaning
+
+ - Duplicates
+ - Missing Data
+ - Dummy Variables
+ - Rescaling
+ - Dealing with Skew
+ - Removing Outliers
+
+<br>
+--
+count:false
+.smallest[
+```python
+# read in example data
+df_shop = pd.read_csv('../data/flowershop_data_with_dups.csv',
+                      header=0,
+                      parse_dates=['purchase_date'],
+                      delimiter=',')
+```]
+
+---
+# But first: df.info()
+
+```python
+df_shop.info()
+```
+```
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 1001 entries, 0 to 1000
+Data columns (total 6 columns):
+purchase_id        1001 non-null int64
+lastname           1001 non-null object
+purchase_date      1001 non-null datetime64[ns]
+stars              1001 non-null int64
+price              979 non-null float64
+favorite_flower    823 non-null object
+dtypes: datetime64[ns](1), float64(1), int64(2), object(2)
+memory usage: 47.0+ KB
+```
+
+---
+# Duplicated Data
+
+- Only drop duplicates if you know data should be unique
+- Example: if there is a unique id per row
+
+<br>
+--
+count:false
+.smaller[
+```python
+sum(df_shop.duplicated())
+```
+```
+1
+```]
+
+--
+count:false
+.smaller[
+```python
+df_shop[df_shop.duplicated(keep='first')]
+```
+```
+      purchase_id  lastname purchase_date  stars    price favorite_flower
+1000         1010  FERGUSON    2017-05-04      2  21.0183        daffodil
+```]
+
+---
+# Duplicated Data
+
+<br>
+
+.smallest[
+```python
+df_shop[df_shop.duplicated(subset='purchase_id',keep=False)].sort_values(by='purchase_id)
+```
+```
+      purchase_id  lastname purchase_date  stars      price favorite_flower
+10           1010  FERGUSON    2017-05-04      2  21.018300        daffodil
+1000         1010  FERGUSON    2017-05-04      2  21.018300        daffodil
+100          1101      WEBB    2017-07-13      2   8.004356            iris
+101          1101     BURKE    2017-08-16      4  18.560260        daffodil
+```]
+
+
+---
+# Duplicated Data
+
+<br>
+
+.smaller[
+```python
+df_new = df_shop.drop_duplicates(subset=None   # consider subset of columns
+                                 ,keep='first' # or last or False)
+                                 ,inplace=False)
+```]
+
+--
+count:false
+.smaller[
+```python
+# or can use inplace to change the original dataframe
+df_shop.drop_duplicates(subset=None,keep='first',inplace=True)
+```]
+
+--
+count:false
+.smaller[
+```python
+# drop rows with duplicates in only one column
+df_shop = df_shop.drop_duplicates(subset=['purchase_id'])
+```]
+
+
+---
+# Missing Data
+
+--
+count:false
+- Reasons for missing data
+ - Sensor error (random?)
+ - Data entry error (random?)
+ - Survey-subject decisions (non-random?)
+ - etc.
+
+
+
+--
+count:false
+- Dealing with missing data
+
+ - Drop rows
+ - Impute
+ - Fill with adjacent data
+ - Infer from other features
+
+---
+# Missing Data in Pandas
+
+- `np.nan`: Not A Number
+
+- Use `.dropna()` or `.dropnull()`
+
+
+
+--
+count:false
+.smallest[
+```python
+df_shop.info()
+```]
+.smallest[
+```
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 1000 entries, 0 to 999
+Data columns (total 6 columns):
+purchase_id        1000 non-null int64
+lastname           1000 non-null object
+purchase_date      1000 non-null datetime64[ns]
+stars              1000 non-null int64
+price              978 non-null float64
+favorite_flower    822 non-null object
+dtypes: datetime64[ns](1), float64(1), int64(2), object(2)
+memory usage: 54.7+ KB
+```]
+
+
+---
+# Missing Data in Pandas
+
+.smallest[
+```python
+# isna returns True where data is missing, False otherwise
+df_shop.price.isna().head(2) # or .isnull()
+```]
+.smallest[
+```
+0    False
+1    False
+Name: price, dtype: bool
+```]
+
+--
+count:false
+.smallest[
+```python
+# notna returns True where data is not missing, False otherwise
+df_shop.price.notna().head(2)
+```
+```
+0    True
+1    True
+Name: price, dtype: bool
+```]
+
+
+--
+count:false
+.smallest[
+```python
+# find rows where price is missing
+df_shop[df_shop.price.isna()].head()
+```]
+.smallest[
+```
+    lastname purchase_date  stars  price favorite_flower
+20     CLARK    2017-01-05      3    NaN        gardenia
+41    PETERS    2017-02-01      4    NaN          orchid
+54     GREEN    2017-02-13      5    NaN        daffodil
+63   BARNETT    2017-08-27      4    NaN        gardenia
+145  CARROLL    2017-07-29      3    NaN           tulip
+```]
+
+---
+# Missing Data: Drop Rows
+
+.smaller[
+```python
+df_shop.shape
+```
+```
+(1000, 5)
+```]
+
+--
+count:false
+.smaller[
+```python
+# drop rows with nan in any column
+df_shop.dropna().shape
+```
+```
+(802, 5)
+```]
+
+--
+count:false
+.smaller[
+```python
+# drop only rows with nan in price using subset
+df_shop.dropna(subset=['price']).shape
+```
+```
+(978, 5)
+```]
+
+--
+count:false
+.smaller[
+```python
+# drop only rows with nans in all columns
+df_shop.dropna(how='all').shape
+```
+```
+(1000,5)
+```]
+
+---
+# Missing Data: Drop Rows
+
+--
+count:false
+.smaller[
+```python
+# save a new dataframe with dropped rows
+df_new = df_shop.dropna()
+df_new.shape
+```
+```
+(802,5)
+```]
+
+--
+count:false
+.smaller[
+```python
+# drop rows in current dataframe
+df_new = df_shop.copy()
+df_new.dropna(inplace=True)
+df_new.shape
+```
+```
+(802,5)
+```]
+
+--
+count:false
+.smaller[
+```python
+# How many total nan's?
+df_shop.isna().sum().sum()
+```
+```
+200
+```]
+
+---
+# Missing Data: Drop Rows
+
+- Pros:
+ - easy to do
+ - simple to understand
+
+--
+count:false
+- Cons:
+ - potentially large data loss
+ - losing information specific to missing data
+
+---
+# Missing Data: Impute
+
+--
+count:false
+- Impute: fill in with some data
+
+
+--
+count:false
+- Use .fillna()
+
+
+--
+count:false
+- Common filler values:
+ - mean
+ - median
+ - 0
+
+---
+# Missing Data: Impute
+
+--
+count:false
+.smaller[
+```python
+df_shop.price.mean()
+```
+```
+23.40
+```]
+
+--
+count:false
+.smaller[
+```python
+# make a copy to keep our original df
+df_new = df_shop.copy()
+```]
+--
+count:false
+.smaller[
+```python
+# fill missing price with mean of price
+df_new.price = df_shop.price.fillna(df_shop.price.mean())
+```]
+--
+count:false
+.smaller[
+```python
+# check to make sure all nulls filled
+sum(df_new.price.isna())
+```
+```
+0
+```]
+
+--
+count:false
+.smallest[
+```python
+# inplace works here as well
+df_new.price.fillna(df.price.mean(),inplace=True)
+```]
+
+---
+# Missing Data: Impute
+
+- Pros:
+ - easy to do
+ - simple to understand
+
+--
+count:false
+- Cons:
+ - losing information specific to missing data
+
+---
+# Missing Data: Adjacent Data
+
+--
+count:false
+- Use .fillna() with method:
+ - ffill: propagate last valid observation forward to next valid
+ - bfill: use next valid observation to fill gap backwards
+- Use when there is reason to believe data not i.i.d. (eg: stock price)
+
+
+--
+count:false
+```python
+df_new['price'] = df_shop.price.fillna(method='ffill')
+```
+
+---
+# Missing Data: Infer
+
+- Can treat any feature in your data as a label
+- Predict values of missing features using a model
+- Ex: Can we predict price based on any of the other features?
+ - Additional feature engineering may be needed prior to this
+
+
+---
+# Missing Data: Dummy Columns
+
+--
+count:false
+- Data may be missing for a reason!
+- Capture "missing" before filling
+
+--
+count:false
+```python
+# storing a column of 1:missing, 0:not-missing
+df_new['price_isnull'] = df_shop.price.isna().astype(int)
+```
+
+--
+count:false
+```python
+# can now fill missing values
+df_new['price'] = df_shop.price.fillna(df_shop.price.mean())
+```
+
+---
+# Rescaling
+
+--
+count:false
+- Want features to be in the same scale
+
+--
+count:false
+- Methods of rescaling
+ - Standardization (Variance scaling)
+ - Min-Max rescaling (Normalization)
+ - others...
+
+--
+count:false
+.smallest[
+```python
+# load taxi data
+taxi = pd.read_csv('../data/yellow_tripdata_2017-01_subset10000rows.csv',
+                parse_dates=['tpep_pickup_datetime','tpep_dropoff_datetime'])
+
+# create trip_duration
+taxi['trip_duration'] = (taxi.tpep_dropoff_datetime - taxi.tpep_pickup_datetime).dt.seconds
+
+# select subset
+df_taxi = taxi[(taxi.trip_duration &lt; 3600) &amp; (taxi.tip_amount &gt; 0) &amp; (taxi.tip_amount &lt; 10)]
+```]
+
+---
+# Rescaling
+
+--
+count:false
+```python
+df_taxi[['trip_duration','tip_amount']].describe()
+```
+```
+       trip_duration   tip_amount
+mean      765.030683     2.405944
+std       496.831608     1.552848
+min         2.000000     0.010000
+max      3556.000000     9.990000
+```
+
+
+---
+# Rescaling: Standardization
+
+.smaller[
+- rescale to 0 mean, standard deviation of 1
+ -  `X_scaled = (X - X.mean()) / X.std()`
+]
+
+--
+count:false
+.smaller[
+```python
+from sklearn.preprocessing import StandardScaler
+```]
+
+--
+count:false
+.smaller[
+```python
+# instantiate
+ss = StandardScaler()
+
+# fit to the data
+ss.fit(df_taxi[['trip_duration','tip_amount']])
+
+# transform the data
+X = ss.transform(df_taxi[['trip_duration','tip_amount']])
+```
+```
+array([[-0.50127786, -0.48040987],
+       [-0.16512088, -0.90546941],
+       [ 0.13882945,  0.92357466]])
+```]
+
+---
+# Rescaling: Standardization
+
+.smaller[
+```python
+df_new = pd.DataFrame(X,columns=['trip_duration_scaled','tip_amount_scaled'])
+print(df_new.describe())
+```
+```
+       trip_duration_scaled  tip_amount_scaled
+mean           4.622808e-17      -1.358307e-16
+std            1.000080e+00       1.000080e+00
+min           -1.535917e+00      -1.543059e+00
+max            5.617987e+00       4.884357e+00
+```]
+
+<br>
+--
+count:false
+.smaller[
+```python
+# can also fit and transform at the same time
+X = StandardScaler().fit_transform(df_taxi[['trip_duration','tip_amount']])
+X[:3]
+```
+```
+array([[-0.50127786, -0.48040987],
+       [-0.16512088, -0.90546941],
+       [ 0.13882945,  0.92357466]])
+```]
+
+
+---
+# Rescaling: Min-Max
+
+--
+count:false
+.smaller[
+- rescale values between 0 and 1
+ - `X_scaled = (X - X.min()) / (X.max() - X.min())`
+ - preserves 0
+ - removes negative values]
+
+--
+count:false
+.smaller[
+```python
+from sklearn.preprocessing import MinMaxScaler
+```]
+
+--
+count:false
+.smaller[
+```python
+X = MinMaxScaler().fit_transform(df_taxi[['trip_duration','tip_amount']])
+
+df_new = pd.DataFrame(X,columns=['trip_duration_scaled','tip_amount_scaled'])
+print(df_new.describe())
+```
+```
+       trip_duration_scaled  tip_amount_scaled
+mean               0.214696           0.240075
+std                0.139795           0.155596
+min                0.000000           0.000000
+max                1.000000           1.000000
+```]
+
+---
+# Dealing with Skew
+
+- Many models expect "normal", symmetric data (ex: linear models)
+- Highly skewed: tail has larger effect on model (outliers?)
+- Transform with `log` or `sqrt`
+
+.center[
+![](images/skewed_data.png)
+]
+
+
+---
+# Dealing with Skew
+
+.smallest[
+```python
+fig,ax = plt.subplots(1,3,figsize=(12,4))
+sns.distplot(df_taxi.total_amount, ax=ax[0]);
+sns.distplot(df_taxi.total_amount.apply(np.sqrt), ax=ax[1]); ax[1].set_xlabel('sqrt transform');
+sns.distplot(df_taxi.total_amount.apply(np.log),  ax=ax[2]); ax[2].set_xlabel('log transform');
+```]
+.center[
+![](images/skewed_data_transformed.png)]
+
+
+---
+# Outliers
+
+- Similar to missing data:
+ - human data entry error
+ - instrument measurement errors
+ - data processing errors
+ - natural deviations
+
+.center[
+![:scale 50%](images/outlier-detection-1.png)]
+
+---
+# Outliers?
+
+.center[
+![](images/higgs_outlier.png)]
+
+---
+# Outliers?
+
+--
+count:false
+### Why worry about them?
+
+- can throw off analysis
+- can indicate issues
+
+
+--
+count:false
+### Detecting Outliers
+
+- understand your data!
+- visualizations
+- z-scores
+
+---
+# Detecting Outliers
+.smallest[
+```python
+df = pd.DataFrame(np.random.normal(50,20,1000), columns=['measure'])
+df = df.append(pd.DataFrame(np.random.normal(120,1,20), columns=['measure']))
+
+fig,ax = plt.subplots(1,2, figsize=(10,5))
+sns.distplot(df.measure,ax=ax[0]);
+sns.boxplot(df.measure,ax=ax[1]);
+```]
+
+.center[
+![](images/normal_plus_outliers.png)]
+
+---
+# Detecting Outliers
+
+.smallest[
+```python
+# zscore
+df['measure_zscore'] = (df.measure - df.measure.mean()) / df.measure.std()
+
+fig, ax = plt.subplots(1,3,figsize=(12,4))
+sns.distplot(df.measure,ax=ax[0]);
+sns.distplot(df.measure_zscore, ax=ax[1]);
+
+keep_idx = np.abs(df.measure_zscore) &lt; 2
+
+sns.distplot(df[keep_idx].measure_zscore, ax=ax[2]);
+```]
+
+.center[
+![](images/remove_by_zscore.png)]
+
+
+---
+# Detecting Outliers
+
+### Many more parametric and non-parametric methods
+
+- Standardized Residuals
+- DBScan
+- ElipticEnvelope
+- IsolationForest
+- other Anomoly Detection techniques
+
+---
+# Dealing with Outliers
+
+### How to deal with outliers?
+
+- drop data
+- treat as missing
+
+
+---
+# Feature Engineering
+ - Binning
+ - One-Hot encoding
+ - Derived
+ - Pipelines
+
+
+---
+# Binning
+
+.smallest[
+- Transform continuous features to categorical
+- Use pd.cut
+]
+
+.smallest[
+```python
+trip_duration_bins = [df_taxi.trip_duration.min(),
+                      df_taxi.trip_duration.median(),
+                      df_taxi.trip_duration.quantile(0.75),
+                      df_taxi.trip_duration.max(),
+                     ]
+
+```]
+
+--
+count:false
+.smallest[
+```python
+df_new = df_taxi.copy()
+df_new['trip_duration_binned'] = pd.cut(df_taxi.trip_duration,
+                                        bins=trip_duration_bins,
+                                        labels=['short','medium','long'],
+                                        include_lowest=True
+                                       )
+
+df_new[['trip_duration','trip_duration_binned']].iloc[:4]
+```
+```
+    trip_duration trip_duration_binned
+1             516                short
+2             683               medium
+7             834               medium
+8             298                short
+```
+]
+
+---
+# One-Hot Encoding
+
+- Encode categorical features
+- One column per category, '1' in only one column per row
+
+--
+count:false
+.smaller[
+```python
+pd.get_dummies(df_new.trip_duration_binned, prefix='trip_duration').iloc[:3]
+```
+```
+   trip_duration_short  trip_duration_medium  trip_duration_long
+1                    1                     0                   0
+2                    0                     1                   0
+7                    0                     1                   0
+```]
+
+
+---
+# One-Hot Encoding
+
+.smaller[
+```python
+#Using scikit learn
+from sklearn.preprocessing import OneHotEncoder
+
+ohe = OneHotEncoder(sparse=False,handle_unknown='ignore')
+
+ohe.fit(df_new[['trip_duration_binned']])
+
+ohe.categories_
+```
+```
+[array(['long', 'medium', 'short'], dtype=object)]
+```]
+
+---
+# One-Hot Encoding
+
+.smaller[
+```python
+df_new.trip_duration_binned.head(3)
+```
+```
+1     short
+2    medium
+7    medium
+Name: trip_duration_binned, dtype: category
+Categories (3, object): [short &lt; medium &lt; long]
+```]
+.smaller[
+```python
+ohe.transform(df_new[['trip_duration_binned']])[:3]
+```
+```
+array([[0., 0., 1.],
+       [0., 1., 0.],
+       [0., 1., 0.]])
+```]
+
+---
+# Derived Features
+
+- Anything that is a transformation of our data
+- This is where the money is?
+- Ex: trip_duration
+
+---
+# Derived Features
+
+- Ex: PolynomialFeatures
+
+--
+count:false
+.smaller[
+```python
+# first 3 rows, first 2 features
+X_train_wine.iloc[:3,:2]
+```
+```
+     alcohol  malic_acid
+23     12.85        1.60
+9      13.86        1.35
+121    11.56        2.05
+```]
+
+--
+count:false
+.smaller[
+```python
+from sklearn.preprocessing import PolynomialFeatures
+
+pf = PolynomialFeatures(degree=2,include_bias=False)
+X_new = pf.fit_transform(X_train_wine.iloc[:3,:2])
+X_new
+```
+```
+array([[ 12.85  ,   1.6   , 165.1225,  20.56  ,   2.56  ],
+       [ 13.86  ,   1.35  , 192.0996,  18.711 ,   1.8225],
+       [ 11.56  ,   2.05  , 133.6336,  23.698 ,   4.2025]])
+```]
+
+---
+# Pipelines
+
+- Recently been changes: ColumnTransformer
+- Talk about this next time.
+
+---
+# Natural Language Processing
+
+### Many NLP Tasks
+
+- topic modeling
+- sentiment analysis
+- entity recognition
+- machine translation
+- natural language generation
+- question answering
+- relationship extraction
+- automatic summarization
+- ...
+
+---
+# NLP: The Corpus
+
+**corpus**: collection of documents
+
+### Each item a document
+- tweet
+- review
+- resume
+- book
+- article
+- sentence?
+- ...
+
+
+---
+# NLP: Doc Representation
+
+```
+doc 1: "The cat in the hat."
+doc 2: "The quick brown cat jumped over the lazy cat."
+```
+
+--
+count:false
+- **terms**: distinct values in our vocabulary ('brown','cat',...)
+
+--
+count:false
+- **vocabulary**: set of terms that can be in a document
+
+--
+count:false
+- **tokens**: strings that make up a document ('the','cat',...)
+
+--
+count:false
+- **tokenization**: transform document into tokens 
+
+---
+# NLP: Tokenization
+
+--
+count:false
+- common tokenization method: whitespace
+
+```
+doc 1: "The","cat","in","the","hat."
+doc 2: "The","quick","brown","cat","jumped","over","the","lazy","cat."
+```
+
+--
+count:false
+- Additional transformations depend on problem:
+ - lowercase
+ - remove stopwords
+ - **stemming**: reduce token to stem (eg: "tokenization"->"tokeniz")
+ - **lemmatization**: common form (eg: "tokenization"->"tokenize")
+ - `<start>` and `<end>` tags?
+ - remove special characters
+
+
+---
+# NLP: Doc Representation
+
+--
+count:false
+- **Bag of Words (BOW)** representation:
+ - split document into tokens
+ - ignore order
+ - but, lose context!
+
+```
+doc 1: "cat","hat","in","the","the"
+doc 2: 'brown','cat','cat','jumped','lazy','over','quick','the','the'
+```
+<br>
+--
+count:false
+- **Stopwords**: terms that have high DF and aren't informative
+ - ex: 'a', 'about','above',...
+ - often removed prior to analysis
+
+---
+# NLP: Doc Representation
+
+--
+count:false
+- n-grams
+ - create new terms as combinations of n tokens
+ - vocabulary increses quickly
+
+Bigrams:
+```
+doc 1: "<start>_the",the_cat","cat_in","the_hat","hat_<end>"
+doc 2: "<start>_the",'the_quick','quick_brown',...
+```
+
+---
+# NLP: Doc Representation
+
+--
+count:false
+- **Term Frequency**: number of occurance of a term in a document
+--
+count:false
+- **Document Frequency**: number of documents a term occurs in
+
+--
+count:false
+- First need to tokenize to generate vocabulary
+
+--
+count:false
+Unigram term frequency (TF):
+```
+doc 1: "cat":1,"hat":1,"the":2
+doc 2: "cat":2,"brown":1,...
+```
+
+--
+count:false
+Unigram document frequency (DF):
+```
+cat:2
+hat:1
+the:2
+...
+```
+
+---
+# NLP: CountVectorizer
+
+.smaller[
+```python
+from sklearn.feature_extraction.text import CountVectorizer
+
+docs = ['The cat in the hat.','The quick brown cat jumps over the lazy cat']
+cv = CountVectorizer(stop_words='english')
+X = cv.fit_transform(docs)
+```]
+--
+count:false
+.smaller[
+```python
+cv.vocabulary_
+```
+```
+{'cat': 1, 'hat': 2, 'quick': 5, 'brown': 0, 'jumps': 3, 'lazy': 4}
+```]
+--
+count:false
+.smaller[
+```python
+X
+```
+```
+<2x6 sparse matrix of type '<class 'numpy.int64'>'
+	with 7 stored elements in Compressed Sparse Row format>
+```]
+--
+count:false
+.smaller[
+```python
+X.todense()
+```
+```
+matrix([[0, 1, 1, 0, 0, 0],
+        [1, 2, 0, 1, 1, 1]])
+```]
+
+---
+# NLP: Tf-Idf
+
+--
+count:false
+- What if some terms are still uninformative?
+--
+count:false
+- Can we downweight terms that are in many documents?
+--
+count:false
+- **Term Frequency - Inverse Document Frequency (TfIdf)**
+
+--
+count:false
+.smaller[
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+tfidf = TfidfVectorizer()
+X = tfidf.fit_transform(docs)
+X.todense()
+```
+```
+matrix([[0.        , 0.33425073, 0.46977774, 0.46977774, 0.        ,
+         0.        , 0.        , 0.        , 0.66850146],
+        [0.33241213, 0.47302794, 0.        , 0.        , 0.33241213,
+         0.33241213, 0.33241213, 0.33241213, 0.47302794]])
+```]
+
+---
+# NLP: 20Newsgroups
+
+```python
+from sklearn.datasets import fetch_20newsgroups
+
+ngs = fetch_20newsgroups()
+
+# grab 10 docs
+docs = ngs['data'][:10]
+
+docs[0]
+```
+```
+"From: lerxst@wam.umd.edu (where's my thing)\nSubject: WHAT car is thi
+s!?\nNntp-Posting-Host: rac3.wam.umd.edu\nOrganization: University of 
+Maryland, College Park\nLines: 15\n\n I was wondering if anyone out th
+ere could enlighten me on this car I saw\nthe other day. It was a 2-do
+or sports car, looked to be from the late 60s/\nearly 70s. It was call
+ed a Bricklin. The doors were really small. In addition,\nthe front ...
+```
+
+---
+# NLP: To be continued...
+
+
+---
+# Feature Selection
+
+- Reasons to select/remove features
+
+--
+count:false
+ - improve score performance (reducing complexity)
+
+--
+count:false
+ - improve speed performance (reducing calculation)
+
+--
+count:false
+ - interpretability
+
+
+---
+# Feature Selection Methods
+
+--
+count:false
+ - By Model
+
+--
+count:false
+ - By Variance
+
+--
+count:false
+ - Univariate Tests
+
+--
+count:false
+ - Recursive Tests
+
+
+---
+# Load Binary Wine Classification
+
+.smallest[
+```python
+wine = datasets.load_wine()
+X_wine = pd.DataFrame(wine.data,columns=wine.feature_names)
+y_wine = wine.target
+
+X_wine = X_wine.iloc[y_wine &lt; 2]
+y_wine = y_wine[y_wine &lt; 2]
+```]
+
+.smallest[
+```python
+X_train_wine,X_test_wine,y_train_wine,y_test_wine = train_test_split(X_wine,y_wine)
+```]
+
+.smallest[
+```python
+list(X_wine.columns)
+```
+```
+['alcohol',
+ 'malic_acid',
+ 'ash',
+ 'alcalinity_of_ash',
+ 'magnesium',
+ 'total_phenols',
+ 'flavanoids',
+ 'nonflavanoid_phenols',
+ 'proanthocyanins',
+ 'color_intensity',
+ 'hue',
+ 'od280/od315_of_diluted_wines',
+ 'proline']
+```]
+
+---
+# Feature Selection: By Model
+
+- Ex: Linear model with LASSO (L1) Regularization
+
+--
+count:false
+.smallest[
+```python
+from sklearn.linear_model import LogisticRegression
+
+logr = LogisticRegression(C=0.01, penalty="l1").fit(X_train_wine, y_train_wine)
+```]
+
+--
+count:false
+.smallest[
+```python
+logr.coef_
+```
+```
+array([[ 0.        ,  0.        ,  0.        ,  0.        ,  0.06552656,
+         0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+         0.        ,  0.        , -0.00833196]])
+```]
+
+--
+count:false
+.smallest[
+```python
+logr.coef_[0] != 0
+```
+```
+array([False, False, False, False,  True, False, False, False, False,
+       False, False, False,  True])
+```]
+
+--
+count:false
+.smallest[
+```python
+list(X_wine.columns[logr.coef_[0] != 0])
+```
+```
+['magnesium', 'proline']
+```]
+
+---
+# Feature Selection: By Model
+
+--
+count:false
+.smallest[
+```python
+# Using sklearn
+from sklearn.feature_selection import SelectFromModel
+
+sfm = SelectFromModel(logr, prefit=True)
+```]
+
+--
+count:false
+.smallest[
+```python
+sfm.get_support()
+```
+```
+array([False, False, False, False,  True, False, False, False, False,
+       False, False, False,  True])
+```]
+
+--
+count:false
+.smallest[
+```python
+list(X_wine.columns[sfm.get_support()])
+```
+```
+['magnesium', 'proline']
+```]
+
+---
+# Feature Selection: By Model
+
+--
+count:false
+.smallest[
+```python
+from sklearn.ensemble import RandomForestClassifier
+sfm = SelectFromModel(RandomForestClassifier(),threshold='mean').fit(X_train_wine,y_train_wine)
+```]
+--
+count:false
+.smallest[
+```python
+list(X_wine.columns[sfm.get_support()])
+```
+```
+['alcohol', 'color_intensity', 'proline']
+```]
+--
+count:false
+.smallest[
+```python
+sorted(zip(X_wine.columns,sfm.estimator_.feature_importances_),
+       key=lambda x:x[1],
+       reverse=True)[:4]
+```
+```
+[('proline', 0.3228312241255617),
+ ('alcohol', 0.24860094669520075),
+ ('color_intensity', 0.1838898816175213),
+ ('magnesium', 0.058593991709371386)]
+```]
+
+---
+# Feature Selection: By Variance
+
+--
+count:false
+- low variance features are generally less informative
+--
+count:false
+- sklearn: VarianceThreshold
+--
+count:false
+- by default, removes features with 0 variance
+--
+count:false
+- otherwise, threshold
+ - Ex: remove boolean values with > 80% 1's or 0's
+ - Var[X] = p(1-p)
+ - threshold = .8 * (1 - .8)
+
+---
+# Feature Selection: By Variance
+
+--
+count:false
+```python
+# add feature with 0 variation for demo
+tmp_X = X_train_wine.copy()
+tmp_X['bad_feature'] = 1
+```
+
+--
+count:false
+```python
+from sklearn.feature_selection import VarianceThreshold
+
+# Note: No y in the fit!
+vt = VarianceThreshold(threshold=0).fit(tmp_X)
+```
+
+--
+count:false
+```python
+# show columns that were NOT chosen
+list(tmp_X.columns[~vt.get_support()])
+```
+```
+['bad_feature']
+```
+
+---
+# Feature Selection: Univariate
+
+- Perform statistical test on one feature independent of all others
+- Rank and select top k features
+- sklearn: SelectKBest
+- requires a scoring function
+
+
+--
+count:false
+- Example: Chi Squared for classification: `chi`
+ - measures dependence between stochastic variables
+ - finds features least likely to be independent of class
+ - requires non-negative features
+
+---
+# Feature Selection: Univariate
+
+
+--
+count:false
+.smallest[
+```python
+from sklearn.feature_selection import SelectKBest, chi2
+
+# select 2 best features
+kbest = SelectKBest(chi2, k=2).fit(X_train_wine, y_train_wine)
+
+list(X_wine.columns[kbest.get_support()])
+```
+```
+['color_intensity', 'proline']
+```]
+
+--
+count:false
+.smallest[
+```python
+# Sort features by likelihood of independence from class
+sorted(zip(X_wine.columns,kbest.pvalues_),key=lambda x:x[1])
+```
+```
+[('proline', 0.0),
+ ('color_intensity', 4.450650117385295e-09),
+ ('magnesium', 1.731369984620532e-07),
+ ...
+ ('malic_acid', 0.6711882718339119),
+ ('hue', 0.9961745847940715)]
+```]
+
+--
+count:false
+.smallest[
+```python
+# select retain only selected features
+X_new = kbest.transform(X_train_wine)
+X_new.shape[1]
+```
+```
+2
+```]
+
+---
+# Feature Selection: Univariate
+
+
+Other scoring functions from sklearn:
+
+--
+count:false
+- **F-test**: captures linear dependency between feature and target
+ - f_regression, f_classif
+
+--
+count:false
+- **Mutual Information**: captures non-parametric statistical dependency
+    - mutual_info_regression, mutual_info_classif
+
+---
+# Feature Selection: Recursive
+
+--
+count:false
+- Would like to test all possible combinations of features
+--
+count:false
+- Likely prohibitively expensive(?)
+--
+count:false
+- Instead recursively select smaller subsets of features
+ - `coef_`
+ - `feature_importances_`
+--
+count:false
+- Repeat until
+ - requested number of features remain
+ - achieve optimal score
+--
+count:false
+- sklearn: RFE and RFECV
+
+---
+# Feature Selection: Recursive
+
+--
+count:false
+.smaller[
+```python
+from sklearn.feature_selection import RFE
+
+rfe = RFE(RandomForestClassifier(), 3, step=1).fit(X_train_wine,y_train_wine)
+list(X_wine.columns[rfe.support_])
+```
+```
+['alcohol', 'color_intensity', 'proline']
+```]
+
+--
+count:false
+.smaller[
+```python
+sorted(zip(X_wine.columns,rfe.ranking_),key=lambda x: x[1])
+```
+```
+[('alcohol', 1),
+ ('color_intensity', 1),
+ ('proline', 1),
+ ('flavanoids', 2),
+ ('magnesium', 3),
+ ...
+ ('malic_acid', 7),
+ ('hue', 8),
+ ('proanthocyanins', 9),
+ ('ash', 10),
+ ('total_phenols', 11)]
+```]
+
+---
+class:middle
+
+# Questions?
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
