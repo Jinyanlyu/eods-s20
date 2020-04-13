@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Week 9</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - F2020
+
+# Week 9
+
+04/13/2020
+
+---
+# Topics Going Forward
+
+- Dimensionality Reduction
+- Image Recognition
+- Clustering
+
+
+--
+count:false
+- Natural Language Processing
+- Topic Modeling
+- Recommendation Systems
+
+
+--
+count:false
+- Time Series
+- Data Processing and Delivery (ETL and API)
+
+
+--
+count:false
+- Data Storage and Management (SQL and NoSQL)
+- Project Reporting?
+
+---
+# TODOs
+
+--
+count:false
+- Reading
+    - DSFS Ch 23: Recommender Systems
+    - Optional: SpaCy online course [https://course.spacy.io/chapter1]
+    - Optional: [CNNs](https://medium.com/@ageitgey/machine-learning-is-fun-part-3-deep-learning-and-convolutional-neural-networks-f40359318721)
+    - Optional: [Tensorflow: Face Detection](https://www.tensorflow.org/tutorials/images/classification)
+
+<br>
+--
+count: false
+- Quiz 9 
+- **HW 3**: Out in next few days, make sure to mark which question is on which page
+
+
+
+---
+# Today
+<br/>
+
+--
+count:false
+- Dimensionality Reduction
+
+--
+count:false
+- Image Recognition
+
+--
+count:false
+- Clustering
+
+
+
+---
+class:middle
+
+# Questions?
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>

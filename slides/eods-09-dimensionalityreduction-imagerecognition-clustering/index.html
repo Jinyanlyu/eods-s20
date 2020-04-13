@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dimensionality Reduction, Image Recognition, Clustering</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - F2020
+
+# Dimensionality Reduction, Image Recognition, Clustering
+
+04/13/2020
+
+---
+# In This Lecture:
+
+- Dimensionality Reduction
+    - PCA
+
+- Image Recognition
+    - Using PCA
+    - Other methods
+
+- Clustering
+    - $k$-Means
+    - Heirarchical Agglomerative Clustering
+
+---
+# Dimensionality Reduction
+
+--
+count:false
+- We've created many features through data engineering
+ - One-hot encoding
+ - Polynomial features
+ - Term Frequency counts in NLP
+ - etc..
+
+
+
+--
+count:false
+- Ways to reduce the number of features
+--
+count:false
+ - Feature Selection
+--
+count:false
+ - **Dimensionality Reduction**
+
+---
+# Dimensionality Reduction
+
+--
+count:false
+- Can we find a way to combine features that better explains the data?
+
+--
+count:false
+- Uses:
+--
+count:false
+ - visualization
+--
+count:false
+ - compression (storage)
+--
+count:false
+ - feature engineering!
+
+---
+# PCA
+
+--
+count:false
+- Principle Compenent Analysis (PCA)
+--
+count:false
+ - variance contains information
+--
+count:false
+ - combine dimensions to explain variance
+--
+ - center the data first!
+--
+count:false
+ - performs Singular Value Decomposition (SVD)
+--
+count:false
+ - **Unsupervised Learning** method
+
+---
+# Recall: Types of Machine Learning
+
+--
+count:false
+- **Supervised Learning**: labeled data (L) features + labels
+--
+count:false
+- **Unsupervised Learning**: unlabeled data (U) only features
+--
+count:false
+- **Semi-Supervized Learning**: L+U
+--
+count:false
+- **Reinforcment Learning**: environment + rewards
+
+---
+# PCA
+
+- How it works:
+--
+count:false
+ - first center the data (subtract the means)
+--
+count:false
+    - first component: 
+        - direction (combination of features)
+        - explains maximum variance
+--
+count:false
+    - next component:
+        - direction, orthogonal to the first (linearly independent)
+        - explains max remaining variance
+--
+count:false
+    - repeat:
+        - \# of possible components == \# of original dimensions
+
+---
+# PCA: Example Data
+
+Example Data: Stock Market Returns
+
+```python
+# stock price returns for Chevron (CVX) and Exxon-Mobil (XOM)
+# already centered
+df = pd.read_csv('../data/sp500_px.csv', index_col=0)
+df = df[['CVX','XOM']]
+```
+
+```
+                 CVX       XOM
+2015-06-25 -1.110001 -0.919998
+2015-06-26  0.360000  0.029999
+2015-06-29 -0.809998 -0.230003
+2015-06-30 -0.979996 -0.540001
+2015-07-01 -0.210007 -0.909996
+```
+
+---
+## PCA: Plot Example Data
+
+.smallest[
+```python
+fig = plt.figure(figsize=(8,8))
+sns.regplot(x='CVX',y='XOM',data=df,fit_reg=False);
+plt.title('Daily Stock Price Returns'); plt.gca().set_aspect('equal');
+```]
+.center[
+![](images/cvx_xom.png)]
+
+
+---
+## PCA: 1st Principle Component
+
+.center[
+![](images/pca_first.png)]
+
+---
+## PCA: 1st Principle Component
+
+.center[
+![](images/pca_second.png)]
+
+---
+## PCA: In Sklearn
+
+```python
+from sklearn.decomposition import PCA
+```
+
+--
+count:false
+```python
+# extract the first n principle components and transform the data 
+X = PCA(n_components=2).fit_transform(df)
+```
+
+--
+count:false
+OR 
+--
+count:false
+```python
+# extract the first n principle components
+pca = PCA(n_components=2).fit(df)
+```
+--
+count:false
+```python
+# then transform the data into n dimensions
+X = pca.transform(df)
+```
+
+---
+## PCA: Transformed Data
+
+- What does the data look like in the transformed space?
+
+--
+count:false
+.smaller[
+```python
+X = pca.transform(df)
+```]
+.center[
+![](images/pca_transformed.png)]
+
+---
+## PCA: Explained Variance
+
+- How much of the variance is explained by each component?
+
+--
+count:false
+```python
+pca.explained_variance_ratio_
+```
+```
+array([0.89585804, 0.10414196])
+```
+
+---
+## PCA: Principle Components
+
+- What does the first component (vector) look like?
+--
+count:false
+```python
+pca.components_[0]
+```
+```
+array([-0.74710069, -0.66471089])
+```
+
+--
+count:false
+- And the second?
+--
+count:false
+```python
+pca.components_[1]
+```
+```
+array([-0.66471089,  0.74710069])
+```
+
+---
+# PCA and Image Recognition
+
+--
+count:false
+- Often, image is represented by a grid of pixels
+--
+count:false
+- Each pixel is a square that takes a value representing a shade
+--
+count:false
+- 1024 x 1024 pixels = 1,048,576 pixels = 1 megapixel
+--
+count:false
+
+- iPhone X11 Pro : 12 megapixels
+--
+count:false
+- Color images contain three layers: red, green, blue
+--
+count:false
+- ~36 million pixel values
+
+
+--
+count:false
+- This is a very high dimensional space!
+--
+count:false
+- Classification using PCA?
+
+<br>
+--
+count:false
+.smaller[
+- Example based on [Faces recognition example using eigenfaces and SVMs](https://scikit-learn.org/stable/auto_examples/applications/plot_face_recognition.html#sphx-glr-auto-examples-applications-plot-face-recognition-py)]
+
+---
+## Example Dataset: LFW
+
+<br>
+
+[Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/)
+
+--
+count:false
+```python
+from sklearn.datasets import fetch_lfw_people
+```
+--
+count:false
+```python
+lfw_people = fetch_lfw_people(min_faces_per_person=70, resize=0.4)
+```
+
+---
+## Example Image
+
+.smallest[
+```python
+plt.imshow(lfw_people.images[1], cmap=plt.cm.gray, vmin=0, vmax=255)
+plt.title(lfw_people.target_names[lfw_people.target[1]], size=12);
+```]
+
+.center[
+![:scale 65%](images/tony_blair.png)
+]
+
+---
+## Example Pixel Values
+
+.smallest[
+```python
+# first 3x3 set of pixels
+plt.imshow(lfw_people.images[1][:3,:3],cmap=plt.cm.gray,vmin=0, vmax=255)
+```]
+--
+count:false
+.center[
+![](images/pixel_example.png)]
+
+--
+count:false
+.smallest[
+```python
+lfw_people.images[1][:3,:3]
+```
+```
+array([[39.66, 50.33, 47.00],
+       [47.66, 63.00, 65.33],
+       [55.33, 76.66, 86.33]], dtype=float32)
+```]
+
+---
+## Representing each Image: Flatten
+
+- Grid as a fixed length feature vector? 
+
+--
+count:false
+```python
+lfw_people.images[1].shape
+```
+```
+(50, 37)
+```
+
+--
+count:false
+```python
+x = lfw_people.images[1].reshape(1,-1)
+x
+```
+```
+[[ 39.66,  50.33,  47.00, ..., 117.66, 115.00, 133.66]]
+```
+
+--
+count:false
+```python
+x.shape
+```
+```
+(1, 1850)
+```
+
+--
+count:false
+- What do we lose when we do this?
+
+---
+## Create a Dataset
+
+.smallest[
+```python
+# get the shape of images for plotting the
+n_samples, h, w = lfw_people.images.shape
+
+# use actual pixel values, ignoring relative position
+X = lfw_people.data
+n_features = X.shape[1]
+
+# the label to predict is the id of the person
+y = lfw_people.target
+target_names = lfw_people.target_names
+n_classes = target_names.shape[0]
+
+# create train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+print(f"image_size: {h}x{w}")
+print("n_features: %d" % n_features)
+print("n_classes : %d" % n_classes)
+print(f"n_train   : {len(X_train)}")
+print(f"n_test    : {len(X_test)}")
+```
+```
+image_size: 50x37
+n_features: 1850
+n_classes : 7
+n_train   : 966
+n_test    : 322
+```]
+
+---
+## Compute PCA and Transform
+
+.smaller[
+```python
+# set the number of dimensions we want to retain
+n_components = 150
+```]
+--
+count:false
+.smaller[
+```python
+# instantiate and fit on X_train
+*pca = PCA(n_components=n_components, svd_solver='randomized',
+*          whiten=True).fit(X_train)
+```]
+
+--
+count:false
+.smaller[
+```python
+# extract and reshape components into eigenfaces for plotting
+eigenfaces = pca.components_.reshape((n_components, h, w))
+```]
+
+--
+count:false
+.smaller[
+```python
+# transform the training and test set for classification
+X_train_pca = pca.transform(X_train)
+X_test_pca = pca.transform(X_test)
+```]
+
+---
+## Eigenfaces
+
+.smaller[
+- What if we plot the top 12 components (eigenfaces) using `.reshape(h,w)`?]
+
+--
+count:false
+.center[
+![](images/eigenfaces.png)
+]
+
+---
+## Train and Tune SVC
+
+```python
+t0 = time()
+params = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
+          'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
+clf_pca = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'),
+                       params, cv=5, iid=False)
+clf_pca = clf_pca.fit(X_train_pca, y_train)
+t1 = time()
+```
+--
+count:false
+```python
+print("done in %0.3fs" % (time() - t0))
+print(f"best_params : {clf_pca.best_params_}")
+print(f"best_score  : {clf_pca.best_score_:0.2f}")
+```
+```
+done in 44.210s
+best_params : {'C': 1000.0, 'gamma': 0.005}
+best_score  : 0.81
+```
+
+---
+## Evaluate on the test set
+
+.smaller[
+```python
+y_pred = clf_pca.predict(X_test_pca)
+```]
+.smaller[
+```python
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred, target_names=target_names))
+```]
+.smaller[
+```
+                   precision    recall  f1-score   support
+
+     Ariel Sharon       0.75      0.46      0.57        13
+     Colin Powell       0.81      0.87      0.84        60
+  Donald Rumsfeld       0.89      0.63      0.74        27
+    George W Bush       0.82      0.98      0.89       146
+Gerhard Schroeder       0.95      0.80      0.87        25
+      Hugo Chavez       1.00      0.53      0.70        15
+       Tony Blair       1.00      0.78      0.88        36
+
+         accuracy                           0.85       322
+        macro avg       0.89      0.72      0.78       322
+     weighted avg       0.86      0.85      0.84       322
+
+```]
+
+---
+## Prediction Examples
+
+.center[
+![](images/face_predictions.png)]
+
+---
+## Other Image Recognition Methods
+
+--
+count:false
+- additional feature engineering
+    - ex: Histogram of Oriented Gradients or HOG (See [PDSH Chap 5](https://jakevdp.github.io/PythonDataScienceHandbook/05.14-image-features.html))
+    - so many more (See [scikit-image](https://scikit-image.org/))
+
+![](images/cat_hog.png)
+
+---
+## Other Image Recognition Methods: Deep Neural Networks
+
+.center[
+![](images/dnn_image_recognition.png)]
+
+.tiny[
+https://www.researchgate.net/figure/Layers-and-their-abstraction-in-deep-learning-Image-recognition-as-measured-by-ImageNet_fig17_326531654]
+
+---
+## Other Image Recognition Methods: Deep Neural Networks
+
+- Convolutional Neural Networks
+    - [Good example](https://medium.com/@ageitgey/machine-learning-is-fun-part-3-deep-learning-and-convolutional-neural-networks-f40359318721)
+
+.center[
+![:scale 100%](images/cnn.jpeg)]
+
+<br>
+.tiny[
+https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53]
+
+---
+class:middle
+
+# Questions?
+
+---
+# Clustering
+
+--
+count:false
+- Want to group $X$ into $k$ clusters
+
+--
+count:false
+- Many methods:
+    - **k-Means**
+    - **Heirarchical Agglomerative Clustering**
+    - Spectral Clustering
+    - ...
+
+--
+count:false
+- **Unsupervised**: There is no label/target
+
+---
+# Why do Clustering?
+
+--
+count:false
+- Exploratory data analysis
+
+--
+count:false
+- group media: images, music, news articles,...
+
+--
+count:false
+- group people: social network
+
+--
+count:false
+- science applications: gene families, psychological groups,...
+
+--
+count:false
+- image segmentation: group pixels, regions, ...
+
+...
+
+---
+# $k$-Means
+
+--
+count:false
+- Not to be confused with k-NN!
+
+--
+count:false
+- Idea:
+--
+count:false
+    - Finds $k$ points in space as cluster centers (means)
+--
+count:false
+    - Assigns datapoints to their closest cluster mean
+
+--
+count:false
+- Have to specify the number of clusters $k$ up front
+
+--
+count:false
+- sklearn uses euclidean distance
+
+---
+## $k$-Means: How it works
+
+<br>
+--
+count:false
+```
+FIRST: choose initial k points (means)
+```
+
+--
+count:false
+```
+A: fix means -&gt; assign all datapoints to their closest mean
+```
+
+--
+count:false
+```
+B: fix cluster assignments -&gt; recalculate means
+```
+--
+count:false
+```
+RETURN TO A and Repeat till convergence!
+```
+
+---
+## Example: Loan Data
+
+.smallest[
+```python
+# loading and plotting the data
+X = pd.read_csv('../data/loan200.csv')[['payment_inc_ratio','dti']].values
+fig = plt.figure(figsize=(6,6))
+plt.scatter(X[:,0],X[:,1],s=80);plt.xlabel('payment_inc_ratio');plt.ylabel('dti');
+```]
+.center[
+![](images/loan_2D.png)]
+
+---
+## KMeans in sklearn
+
+--
+count:false
+```python
+from sklearn.cluster import KMeans
+```
+--
+count:false
+```python
+km = KMeans(n_clusters=4, init='random') # default init: k-means++
+```
+--
+count:false
+```python
+c = km.fit_predict(X)
+```
+--
+count:false
+```python
+# cluster assignments of first 10 datapoints
+c[:10]
+```
+```
+array([2, 3, 0, 0, 0, 0, 3, 1, 2, 2], dtype=int32)
+```
+
+---
+## Plotting Clusters
+
+.tiny[
+```python
+def plot_clusters(X,c,km=None):
+    fig,ax = plt.subplots(1,1,figsize=(6,6))
+    for i in range(np.max(c) + 1):
+        cluster = X[c == i]
+        ax.scatter(cluster[:,0],cluster[:,1],s=80,label=i,cmap='Set2');
+    ax.legend();
+    ax.set_xlabel('payment_inc_ratio');ax.set_ylabel('dti');
+    if km:
+        for m in km.cluster_centers_: # plot cluster centers
+            ax.plot(m[0],m[1], marker='x',c='k', ms=20, mew=5)
+```]
+
+.center[
+![](images/loan_clusters.png)]
+
+
+---
+## How good are the clusters?
+
+### Within Cluster Sum of Squares
+
+--
+count:false
+.center[
+$\Large \sum\_{k=1}^K \sum_{x_i \in C_k} {\mid\mid x_i - \mu_k \mid\mid_2}^2$]
+
+<br>
+--
+count:false
+where $\mid\mid x - \mu \mid\mid\_2 = \sqrt{\sum_{j=1}^d (x_j - \mu_j)^2}$
+
+<br>
+--
+count:false
+- If this is **high**, items in cluster are **far from their means**.
+--
+count:false
+- If this is **low**, items in cluster are **close to their means**.
+
+--
+count:false
+.smaller[
+- animated visualization on next slide using Voronoi diagram]
+
+---
+## How good are the clusters?
+
+
+<br>
+.center[
+![](images/kmeans.gif)]
+
+<br>
+.tiny[
+https://dashee87.github.io/data%20science/general/Clustering-with-Scikit-with-GIFs/]
+
+---
+## Things you need to define for $k$-Means
+
+<br>
+--
+count:false
+- number of clusters $k$
+
+--
+count:false
+- initial locations of means
+--
+count:false
+    - random
+--
+count:false
+    - k-means++ (see [sklearn docs](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html))
+
+
+---
+## How to choose $k$?
+
+--
+count:false
+- One way: use elbow in sum of squared errors
+
+--
+count:false
+.smallest[
+```python
+sse = []
+for i in range(1,10):
+    sse.append(KMeans(n_clusters=i).fit(X).inertia_)
+plt.plot(range(1,10),sse); plt.xlabel('k'); plt.ylabel('sse');
+```]
+--
+count:false
+.center[
+![](images/kmeans_sse.png)
+]
+
+--
+count:false
+- What value $k$ will minimize sse?
+
+---
+# Hierarchical Agglomerative Clustering (HAC)
+
+--
+count:false
+- fairly simple
+
+--
+count:false
+- don't have to specify number of clusters up front
+
+--
+count:false
+- generates binary tree over data
+
+
+---
+## HAC: How it works
+
+<br>
+--
+count:false
+```
+FIRST: every point is it's own cluster
+```
+--
+count:false
+```
+A: Find pair of clusters that are "closest"
+```
+--
+count:false
+```
+B: Merge into single cluster
+```
+--
+count:false
+```
+GOTO A and Repeat till there is a single cluster
+```
+
+<br>
+.tiny[
+- animation on next slide]
+
+---
+## HAC: How it works
+<br>
+.center[
+![](images/hierarch.gif)]
+
+<br>
+.tiny[
+https://dashee87.github.io/data%20science/general/Clustering-with-Scikit-with-GIFs/]
+
+---
+## What is "close"?
+
+<br>
+--
+count:false
+- Need to define what we mean by "closeness" by choosing
+--
+count:false
+    - distance metric (how to measure distance)
+--
+count:false
+    - linkage criteria (how to compare clusters)
+
+---
+## Need to define: Distance Metric
+
+--
+count:false
+- Euclidean : $\sqrt{\sum_{i=1}^n \left(x_i - y_i\right)^2}$
+    - easy analytically, sensitive to outliers
+
+
+--
+count:false
+- Manhattan : $\sum_{i=1}^n \mid x_i - y_i \mid$
+    - more difficult to use analytically, robust to outliers
+
+
+--
+count:false
+- Cosine :  $ 1 - \frac{\sum{x_i y_i}}{\mid\mid x_i \mid\mid_2 \mid\mid y_i \mid\mid_2}$
+    - angle between vectors while ignoring their scale
+
+<br>
+--
+count:false
+- many more (https://numerics.mathdotnet.com/Distance.html)
+
+---
+## Need to define: Linkage
+
+<br>
+--
+count:false
+- **single**: *shortest distance* from item of one cluster to item of the other
+
+<br>
+--
+count:false
+- **average**: *average distance* of items in one cluster to items in the other
+
+<br>
+--
+count:false
+- **complete**: *greatest distance* from item of one cluster to item of the other
+
+<br>
+--
+count:false
+- **ward**: minimize sum of squared differences between all clusters (only euclidean metric)
+
+---
+## HAC and Dendrograms: Single Linkage
+
+.smallest[
+```python
+# nice helper function for creating a dendrogram
+from scipy.cluster import hierarchy
+```]
+--
+count:false
+.smallest[
+```python
+Z = hierarchy.linkage(X,'single')
+fig = plt.figure(figsize=(12,8)); hierarchy.dendrogram(Z)
+```]
+.center[
+![:scale 50%](images/hac_single.png)]
+
+---
+## HAC and Dendrograms: Average Linkage
+
+.smallest[
+```python
+Z = hierarchy.linkage(X,'average')
+fig = plt.figure(figsize=(12,8)); hierarchy.dendrogram(Z)
+```]
+.center[
+![:scale 65%](images/hac_average.png)]
+
+---
+## HAC and Dendrograms: Complete Linkage
+
+.smallest[
+```python
+Z = hierarchy.linkage(X,'complete')
+fig = plt.figure(figsize=(12,8)); hierarchy.dendrogram(Z)
+```]
+.center[
+![:scale 65%](images/hac_complete.png)]
+
+---
+## HAC and Dendrograms: Ward Linkage
+
+.smallest[
+```python
+Z = hierarchy.linkage(X,'ward')
+fig = plt.figure(figsize=(12,8)); hierarchy.dendrogram(Z)
+```]
+.center[
+![:scale 65%](images/hac_ward.png)]
+
+
+---
+## HAC in sklearn
+
+--
+count:false
+```python
+from sklearn.cluster import AgglomerativeClustering
+```
+--
+count:false
+```python
+hac = AgglomerativeClustering(linkage='single',
+                              affinity='euclidean',
+                              n_clusters=4)
+```
+--
+count:false
+```python
+c = hac.fit_predict(X)
+```
+--
+count:false
+```python
+# cluster assignments for first 10 items
+c[:10]
+```
+```
+array([0, 0, 0, 3, 0, 0, 0, 0, 0, 0])
+```
+
+---
+## HAC in sklearn: single
+.smallest[
+```python
+c = AgglomerativeClustering(linkage='single', affinity='euclidean', n_clusters=4).fit_predict(X)
+plot_clusters(X,c)
+```]
+.center[
+![](images/loan_clusters_hacsingle.png)]
+
+---
+## HAC in sklearn: average 
+.smallest[
+```python
+c = AgglomerativeClustering(linkage='average', affinity='euclidean', n_clusters=4).fit_predict(X)
+plot_clusters(X,c)
+```]
+.center[
+![](images/loan_clusters_hacaverage.png)]
+
+---
+## HAC in sklearn: complete
+.smallest[
+```python
+c = AgglomerativeClustering(linkage='complete', affinity='euclidean', n_clusters=4).fit_predict(X)
+plot_clusters(X,c)
+```]
+.center[
+![](images/loan_clusters_haccomplete.png)]
+
+---
+## HAC in sklearn: ward
+.smallest[
+```python
+c = AgglomerativeClustering(linkage='ward', affinity='euclidean', n_clusters=4).fit_predict(X)
+plot_clusters(X,c)
+```]
+.center[
+![](images/loan_clusters_hacward.png)]
+
+
+---
+# Many Other Methods
+
+.center[![:scale 80%](images/sklearn_clustering_methods.png)]
+
+.tiny[
+https://scikit-learn.org/stable/modules/clustering.html]
+
+
+---
+# How to evaluate clustering?
+
+- Inertia in k-means (weighted sse)
+
+- Do we want clusters of similar size?
+
+- If we have labels
+    - How "pure" are the clusters? Homogeneity
+    - Mutual Information
+
+- many others ([see sklearn](https://scikit-learn.org/stable/modules/clustering.html#clustering-performance-evaluation))
+
+
+---
+class:middle
+
+# Questions?
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
