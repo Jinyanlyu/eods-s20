@@ -24,7 +24,7 @@ url = "https://www.oreilly.com/ideas/what-is-data-science"
 html = requests.get(url).text
 soup = BeautifulSoup(html, 'html5lib')
 
-content = soup.find("div", "article-body")   # find article-body div
+content = soup.find("div", "main-post-radar-content")   # find article-body div
 regex = r"[\w']+|[\.]"                       # matches a word or a period
 
 document = []
@@ -274,7 +274,8 @@ for iter in tqdm.trange(1000):
 for k, word_counts in enumerate(topic_word_counts):
     for word, count in word_counts.most_common():
         if count > 0:
-            print(k, word, count)
+            pass
+            #print(k, word, count)
 
 topic_names = ["Big Data and programming languages",
                "Python and statistics",
@@ -282,11 +283,12 @@ topic_names = ["Big Data and programming languages",
                "machine learning"]
 
 for document, topic_counts in zip(documents, document_topic_counts):
-    print(document)
+    #print(document)
     for topic, count in topic_counts.most_common():
         if count > 0:
-            print(topic_names[topic], count)
-    print()
+            pass
+            #print(topic_names[topic], count)
+    #print()
 
 from scratch.linear_algebra import dot, Vector
 import math

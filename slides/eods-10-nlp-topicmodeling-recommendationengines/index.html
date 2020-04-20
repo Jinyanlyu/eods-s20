@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Natural Language Processing, Topic Modeling and Recommendation Engines</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - F2019
+
+# Natural Language Processing, Topic Modeling and Recommendation Engines
+
+11/18/2019
+
+---
+# Natural Language Processing (NLP)
+
+--
+count:false
+- Analyzing and interacting with natural language
+
+--
+count:false
+- Python Libraries
+    - **sklearn**
+    - nltk
+    - **spaCy**
+    - gensim
+    - ...
+
+---
+# Natural Language Processing (NLP)
+
+### Many NLP Tasks
+
+--
+count:false
+- topic modeling
+--
+count:false
+- entity detection
+--
+count:false
+- sentiment analysis
+--
+count:false
+- machine translation
+--
+count:false
+- natural language generation
+--
+count:false
+- question answering
+--
+count:false
+- relationship extraction
+--
+count:false
+- automatic summarization
+--
+count:false
+- ...
+
+
+---
+# NLP: The Corpus
+
+**corpus**: collection of documents
+--
+count:false
+- books
+--
+count:false
+- articles
+--
+count:false
+- reviews
+--
+count:false
+- tweets
+--
+count:false
+- resumes
+--
+count:false
+- sentences?
+- ...
+
+---
+# NLP: Doc Representation
+
+- Documents usually represented as strings
+- string: a sequence (list) of unicode characters
+
+--
+count:false
+```python
+doc = "D.S. is fun!\nIt's  true."
+print(doc)
+```
+```
+D.S. is fun!
+It's  true.
+```
+--
+count:false
+```python
+'|'.join(doc)
+```
+```
+"D|.|S|.| |i|s| |f|u|n|!|\n|I|t|'|s| | |t|r|u|e|."
+```
+
+--
+count:false
+- Need to split this up into parts (**tokens**)
+    
+---
+# Regular Expressions
+
+- Search patterns over text
+- Useful for finding/replacing/grouping
+- Can use the python `re` library
+
+--
+count:false
+.smaller[
+```python
+print(doc)
+```
+```
+D.S. is fun!
+It's  true.
+```]
+
+--
+count:false
+.smaller[
+```python
+import re
+
+# Find all of the whitespaces in doc
+re.findall(r'\s+',doc)
+```]
+--
+count:false
+.smaller[
+```
+[' ', ' ', '\n', '  ']
+```]
+
+---
+# Regular Expressions
+
+- Short list of special characters 
+
+    - `.` : any single character except newline (`r'.', 'x'`)
+    - `^` : beginning of string (`r'^D', 'D.S.'`)
+    - `$` : end of string (`r'`fun!$', 'DS is fun!'`)
+    - `*` : match 0 or more repetitions (`r'x*',''`)
+    - `+` : match 1 or more repetitions (`r'x+', 'xx'`)
+    - `?` : match 0 or 1 repetitions (`r'x?', ''`)
+
+---
+# Regular Expressions
+
+- Short list of special characters (cont.)
+    - `[]`  : a set of characters (^ as first element = not)
+    - `\s`  : whitespace character (Ex: `[ \t\n\r\f\v]`)
+    - `\S`  : non-whitespace character (Ex: `[^ \t\n\r\f\v]`)
+    - `\w`  : word character (Ex: `[a-zA-Z0-9_]`)
+    - `\W`  : non-word character
+    - `\b`  : boundary between \w and \W
+    - and many more!
+
+--
+count:false
+- See [regex101.com](https://regex101.com/) for examples and testing
+
+---
+# NLP: Tokenization
+
+--
+count:false
+- **tokens**: strings that make up a document ('the','cat',...)
+--
+count:false
+- **tokenization**: convert a document into tokens
+--
+count:false
+- **vocabulary**: set of unique tokens (**terms**) in corpus
+
+--
+count:false
+.smaller[
+```python
+# split on whitespace
+re.split(r'\s+', doc)
+```
+```
+['D.S.', 'is', 'fun!', "It's", 'true.']
+```]
+
+--
+count:false
+.smaller[
+```python
+# find tokens of length 2+ word characters
+re.split('\b\w\w+\b')
+```
+```
+['is', 'fun', 'It', 'true']
+```]
+
+--
+count:false
+.smaller[
+```python
+re.findall(r'\b\w\w+\b', re.sub(r'D\.S\.','Data Science',doc))
+```
+```
+['Data','Science', 'is', 'fun', 'It', 'true']
+```]
+
+---
+# NLP:Tokenization
+
+<br>
+.center[
+![](images/spacy_tokenization.svg)
+]
+
+.tiny[
+https://spacy.io/usage/linguistic-features]
+
+---
+# Using spaCy 
+
+```python
+import spacy
+#python -m spacy download en_core_web_sm
+
+nlp = spacy.load("en_core_web_sm")
+
+parsed = nlp(doc)
+'|'.join([token.text for token in parsed])
+```
+```
+"D.S.|is|fun|!|\n|It|'s| |true|."
+```
+
+
+---
+# NLP: Other Preprocessing
+
+--
+count:false
+- add `<START>`, `<END>` tags
+
+--
+count:false
+- lowercase
+
+--
+count:false
+- remove special characters
+
+--
+count:false
+- **stemming**: cut off beginning or ending of word
+    - 'studies' becomes 'studi'
+    - 'studying' becomes 'study'
+
+--
+count:false
+- **lemmatization**: perform morphological analysis
+    - 'studies' becomes 'study'
+    - 'studying' becomes 'study'
+
+---
+# NLP: Bag of Words
+
+- BOW: ignore token order
+
+--
+count:false
+.smaller[
+```python
+sorted(re.findall(r'\b\w\w+\b', re.sub(r'D\.S\.','Data Science',doc).lower()))
+```
+```
+['data', 'fun', 'is', 'it', 'science', 'true']
+```]
+
+---
+# NLP: n-Grams
+
+- **Unigram**: single token
+- **Bigram**: combination of two ordered tokens
+- **n-Gram**: combination of n ordered tokens
+
+- The larger n is, the larger the vocabulary
+
+<br>
+Bigram example:
+
+--
+count:false
+```
+'<start> data science is fun <end>'
+```
+--
+count:false
+```
+['<start>_data','data_science', 'science_is','is_'fun','fun_<end>'
+```
+
+---
+# NLP: TF and DF
+
+--
+count:false
+.smaller[
+- given a vocabulary, transform documents into BOW
+]
+--
+count:false
+.smaller[
+- **Term Frequency**: number of times each term is seen in a document
+]
+--
+count:false
+.smaller[
+- **Document Frequency**: number of documents containing term
+]
+
+--
+count:false
+.smaller[
+```
+# Example Corpus
+['first text',
+ 'second text text']
+```]
+
+--
+count:false
+.smaller[
+```
+#Vocabulary
+['first','second','text']
+``` ]
+
+--
+count:false
+.smaller[
+```
+#TF
+[['first':1,'second':0,'text':1],
+ ['first':0,'second':1,'text':2]] 
+```]
+
+--
+count:false
+.smaller[
+```
+#DF
+['first':1,'second':1,'text':2]
+```]
+
+---
+# NLP: Stopwords
+
+--
+count:false
+- terms that have high DF and aren't informative
+--
+count:false
+ - in general (ex: 'a', 'about','above',...)
+--
+count:false
+ - can also use domain knowledge (class slides: 'data_science')
+--
+count:false
+ - often removed prior to analysis
+
+
+---
+# NLP: Sklearn CountVectorizer
+
+```python
+docs = ['D.S. is fun!','It is true.']
+```
+
+--
+count:false
+```python
+from sklearn.feature_extraction.text import CountVectorizer
+
+cv = CountVectorizer()
+X = cv.fit_transform(docs)
+```
+
+--
+count:false
+```python
+# what vocabulary was learned
+cv.vocabulary_
+```
+```
+{'is': 1, 'fun': 0, 'it': 2, 'true': 3}
+```
+
+---
+# NLP: Sklearn CountVectorizer
+
+```python
+docs = ['D.S. is fun!','It is true.']
+```
+--
+count:false
+```python
+cv = CountVectorizer(lowercase=True,
+                     min_df=1,
+                     max_df=1.0,
+                     token_pattern='\\b\\S\\S+\\b',
+                     ngram_range=(1,2),
+                     stop_words='english')
+X = cv.fit_transform(docs)
+
+```
+--
+count:false
+```python
+cv.vocabulary_
+```
+```
+{'d.s': 0, 'fun': 2, 'd.s fun': 1, 'true': 3}
+```
+
+---
+# NLP: Sklearn CountVectorizer
+
+```python
+docs = ['D.S. is fun!','It is true.']
+```
+--
+count:false
+```python
+sorted([(y,x) for x,y in cv.vocabulary_.items()])
+```
+```
+[(0, 'd.s'), (1, 'd.s fun'), (2, 'fun'), (3, 'true')]
+```
+--
+count:false
+```python
+X
+```
+```
+<2x4 sparse matrix of type '<class 'numpy.int64'>'
+	with 5 stored elements in Compressed Sparse Row format>
+```
+--
+count:false
+```python
+X.todense()
+```
+```
+matrix([[1, 1, 1, 0],
+        [0, 0, 1, 1]])
+```
+
+---
+# NLP: TfIdf
+
+- What if some terms are still uninformative?
+- Can we downweight terms that occur in many documents?
+- **Term Frequency Inverse Document Frequency (TfIdf)**
+
+---
+# NLP: TfIdf
+--
+count:false
+.smallest[
+```python
+docs = ['First sentence is a test.','Second sentence is also a test.']
+```]
+
+--
+count:false
+.smallest[
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+tfidf = TfidfVectorizer(token_pattern='\\b\\S\\S+\\b',
+                        stop_words=['is'],
+                        norm=False,
+                        smooth_idf=False
+                       )
+X = tfidf.fit_transform(docs)
+
+sorted([(y,x) for x,y in tfidf.vocabulary_.items()])
+```]
+.smallest[
+```
+[(0, 'also'), (1, 'first'), (2, 'second'), (3, 'sentence'), (4, 'test')]
+```]
+--
+count:false
+.smallest[
+```python
+X.todense()
+```
+```
+matrix([[0.        , 1.69314718, 0.        , 1.        , 1.        ],
+        [1.69314718, 0.        , 1.69314718, 1.        , 1.        ]])
+```]
+
+---
+# Other NLP Features
+
+- Part of Speech tags
+- Dependency Parsing
+- Entity Detection
+- Word Vectors
+
+- See spaCy!
+
+
+---
+# spaCy: Part of Speech Tagging
+
+.smallest[
+```python
+doc = nlp("Apple is looking at buying U.K. startup for $1 billion")
+```
+]
+--
+count:false
+.smallest[
+```python
+print(f"{'text':7s} {'lemma':7s} {'pos':5s} {'is_stop'}")
+print('-'*30)
+for token in doc:
+    print(f'{token.text:7s} {token.lemma_:7s} {token.pos_:5s} {token.is_stop}')
+```
+```
+text    lemma   pos   is_stop
+------------------------------
+Apple   apple   PROPN False
+is      be      VERB  True
+looking look    VERB  False
+at      at      ADP   True
+buying  buy     VERB  False
+U.K.    u.k.    PROPN False
+startup startup NOUN  False
+for     for     ADP   True
+$       $       SYM   False
+1       1       NUM   False
+billion billion NUM   False
+```]
+
+---
+# spaCy: Dependency Parsing
+<br>
+.smaller[
+```python
+from spacy import displacy
+displacy.serve(doc, style="dep")
+```]
+<br>
+
+.center[
+![:scale 100%](images/spacy_dep_parse.png)]
+
+---
+# spaCy: Entity Detection
+
+```python
+[(ent.text,ent.label_) for ent in doc.ents]
+```
+```
+[('Apple', 'ORG'), ('U.K.', 'GPE'), ('$1 billion', 'MONEY')]
+```
+
+---
+# spaCy: Word Vectors
+
+- word2vec
+- shallow neural net
+- predict a word given the surrounding context (SkipGram or CBOW)
+- words used in similar context should have similar vectors
+
+--
+count:false
+.smaller[
+```python
+# Need either the _md or _lg models to get vector information
+# Note: this takes a while!
+%run -m spacy download en_core_web_md 
+```]
+--
+count:false
+.smaller[
+```python
+nlp = spacy.load('en_core_web_md') # _lg has a larger vocabulary 
+```]
+--
+count:false
+.smaller[
+```python
+doc = nlp('Baseball is played on a diamond.')
+doc[0].text, doc[0].vector.shape, list(doc[0].vector[:3])
+```
+('Baseball', (300,), [0.55838, 0.42791, -0.11687])
+```]
+
+---
+# spaCy: Word Vectors
+
+```python
+# Use nlp.pipe to transform multiple docs at once
+docs = list(nlp.pipe(['Baseball is played on a diamond.',
+                      'Hockey is played on ice.',
+                      'Diamonds are clear as ice.']))
+```
+
+--
+count:false
+.smaller[
+```python
+# using average of token vectors for each document.
+[['{:.2f}'.format(docs[i].similarity(docs[j])) for j in range(3)]
+ for i in range(3)]
+```]
+--
+count:false
+.smaller[
+```
+[['1.00', '0.85', '0.76'],
+ ['0.85', '1.00', '0.77'],
+ ['0.76', '0.77', '1.00']]
+```]
+
+---
+# Learning Sequences
+
+- Hidden Markov Models
+- Conditional Random Fields
+- Recurrant Neural Networks
+- LSTM
+- [BERT](https://towardsdatascience.com/bert-explained-state-of-the-art-language-model-for-nlp-f8b21a9b6270)
+
+---
+# NLP Review
+
+- corpus
+- tokens, tokenization
+- vocabulary, terms
+- n-grams
+- stopwords
+- term frequency (TF)
+- document frequency (DF)
+- TfIdf
+- POS
+- Dependency Parsing
+- Entity Extraction
+- Word Vectors
+
+---
+# Sentiment Analysis and sklearn
+
+see notebook
+
+---
+# Topic Modeling
+
+- What topics are our documents composed of?
+- How much of each topic does each document contain?
+- Can we represent documents using topic weights?
+
+- [See additional slides](latent_dirichlet_allocation.slides.html)
+
+---
+# Recommendation Engines
+
+--
+count:false
+- Find **other things** like the **things I've liked**
+--
+count:false
+- Find **other things** like the **things people like me have liked**
+
+
+--
+count:false
+- Recommend the most popular!
+--
+count:false
+- Content-Based Filtering
+--
+count:false
+- User-Based Collaborative Filtering
+--
+count:false
+- Item-Based Collaborative Filtering
+--
+count:false
+- Hybrid/Ensemble
+
+---
+# Content-Based Filtering
+
+
+--
+count:false
+- If I like product A, and product B is like product A, I'll like product B
+--
+count:false
+- Use similarity of items
+
+
+--
+count:false
+- Matrix: items x items
+--
+count:false
+- Values: Similarity of items
+
+---
+# Example: Housing Data
+
+.smaller[
+```python
+df_house = pd.read_csv('../data/house_sales_subset_normed.csv',index_col=0)
+df = df_house[['SqFtTotLiving_norm','SqFtLot_norm','AdjSalePrice_norm']].iloc[:10]
+print(df.head())
+```
+```
+   SqFtTotLiving_norm  SqFtLot_norm  AdjSalePrice_norm
+0            0.349914      0.654181          -0.798237
+3            1.225407      0.442910          -0.309217
+4           -0.394254      0.443470          -0.811184
+5           -1.258803     -1.685468          -0.414055
+7           -0.241043      2.133356          -0.629701
+```]
+
+---
+# Calculate Distances
+
+--
+count:false
+
+```python
+# using euclidean distance
+from sklearn.metrics.pairwise import euclidean_distances
+
+# calculate all pairwise distances between houses
+dists = euclidean_distances(X)
+dists.shape
+```
+```
+(10,10)
+```
+
+---
+# Query For Similarity
+
+```python
+# Say I like house 5
+query_idx = 5
+df.iloc[query_idx]
+```
+```
+SqFtTotLiving_norm   -1.193141
+SqFtLot_norm         -0.478846
+AdjSalePrice_norm    -1.039064
+Name: 8, dtype: float64
+```
+
+--
+count:false
+```python
+# Distances to house 5
+[f'{x:0.1f}' for x in dists[query_idx]]
+```
+```
+['1.9', '2.7', '1.2', '1.4', '2.8', '0.0', '2.0', '2.1', '1.0', '0.4']
+```
+
+---
+# Get Recommendations
+
+```python
+# find indexes of best scores (for distances, want ascending)
+best_idxs_asc = np.argsort(dists[query_idx])
+best_idxs_asc
+```
+```
+array([5, 9, 8, 2, 3, 0, 6, 7, 1, 4])
+```
+
+---
+# Get Recommendations with Distance
+
+```python
+# the top 10 recommendations with distance
+list(zip(best_idxs_asc,sorted(dists[query_idx])))
+```
+```
+[(5, 0.0),
+ (9, 0.36454193975111393),
+ (8, 0.96489046966839),
+ (2, 1.2412959364891165),
+ (3, 1.3604716337327696),
+ (0, 1.929447464433964),
+ (6, 1.9964107048046749),
+ (7, 2.0989248372129903),
+ (1, 2.6891791893333212),
+ (4, 2.810278966827491)]
+```
+
+---
+# User-Based Collaborative Filtering
+
+--
+count:false
+- If both you and I like Movie A, and you like Movie B, I'll like movie A
+--
+count:false
+- Use similarity of user preference to recommend items
+
+
+--
+count:false
+- Matrix: Users x Items
+--
+count:false
+- Values: Rankings
+
+--
+count:false
+.center[
+![:scale 30%](images/user-based_collaborative_filtering.png)]
+
+
+---
+# Example: User Interests
+
+.smallest[
+```python
+# from Data Science from Scratch by Joel Grus
+#https://github.com/joelgrus/data-science-from-scratch.git
+
+users_interests = [
+    ["Hadoop", "Big Data", "HBase", "Java", "Spark", "Storm", "Cassandra"],
+    ["NoSQL", "MongoDB", "Cassandra", "HBase", "Postgres"],
+    ["Python", "scikit-learn", "scipy", "numpy", "statsmodels", "pandas"],
+    ["R", "Python", "statistics", "regression", "probability"],
+    ["machine learning", "regression", "decision trees", "libsvm"],
+    ["Python", "R", "Java", "C++", "Haskell", "programming languages"],
+    ["statistics", "probability", "mathematics", "theory"],
+    ["machine learning", "scikit-learn", "Mahout", "neural networks"],
+    ["neural networks", "deep learning", "Big Data", "artificial intelligence"],
+    ["Hadoop", "Java", "MapReduce", "Big Data"],
+    ["statistics", "R", "statsmodels"],
+    ["C++", "deep learning", "artificial intelligence", "probability"],
+    ["pandas", "R", "Python"],
+    ["databases", "HBase", "Postgres", "MySQL", "MongoDB"],
+    ["libsvm", "regression", "support vector machines"]
+]
+```]
+
+---
+# Example of User Interests
+
+
+```python
+# interests of user0
+users_interests[0]
+```
+```
+['Hadoop', 'Big Data', 'HBase', 'Java', 'Spark', 'Storm', 'Cassandra']
+```
+
+---
+# Get all Interests
+--
+count:false
+```python
+# get a sorted list of unique interests (here using set)
+unique_interests = sorted({interest
+                           for user_interests in users_interests
+                           for interest in user_interests})
+unique_interests[:5]
+```
+```
+['Big Data', 'C++', 'Cassandra', 'HBase', 'Hadoop']
+```
+
+---
+# Transform UserInterest Matrix
+
+```python
+# Transform between lists of strings and fixed length lists of ints
+from sklearn.preprocessing import MultiLabelBinarizer
+
+mlb = MultiLabelBinarizer(classes=unique_interests)
+```
+--
+count:false
+```python
+user_interest_matrix = mlb.fit_transform(users_interests)
+
+user_interest_matrix[0]
+```
+```
+array([1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+```
+
+---
+# Check UserInterest Matrix
+
+```python
+# do the positions of 1s match the user0 interests?
+mlb.classes_[np.where(user_interest_matrix[0])].tolist()
+```
+```
+['Big Data', 'Cassandra', 'HBase', 'Hadoop', 'Java', 'Spark', 'Storm']
+```
+--
+count:false
+```python
+sorted(users_interests[0])
+```
+```
+['Big Data', 'Cassandra', 'HBase', 'Hadoop', 'Java', 'Spark', 'Storm']
+```
+
+---
+# Calculate Distances
+
+```python
+from sklearn.metrics.pairwise import cosine_similarity
+
+user_similarities = cosine_similarity(user_interest_matrix)
+user_similarities[0]
+```
+```
+array([1.        , 0.3380617 , 0.        , 0.        , 0.        ,
+       0.15430335, 0.        , 0.        , 0.18898224, 0.56694671,
+       0.        , 0.        , 0.        , 0.16903085, 0.        ])
+```
+--
+count:false
+```python
+# what users does user0 share interests with?
+np.where(user_similarities[0])[0]
+```
+```
+array([ 0,  1,  5,  8,  9, 13])
+```
+
+---
+# Find Similar Users
+
+.smaller[
+```python
+# return a sorted list of users based on similarity
+# skip query user and similarity == 0
+def most_similar_users_to(query_idx):
+    users_scores = [(idx,sim)
+                    for idx,sim in enumerate(user_similarities[query_idx])
+                    if idx != query_idx and sim &gt; 0]
+    return sorted(users_scores, key=lambda x:x[1])
+```]
+--
+count:false
+.smaller[
+```python
+most_similar_users_to(0)
+```
+```
+[(5, 0.1543033499620919),
+ (13, 0.1690308509457033),
+ (8, 0.1889822365046136),
+ (1, 0.3380617018914066),
+ (9, 0.5669467095138407)]
+```]
+
+---
+# Recommend Based On User Similarity
+
+- Want to return items sorted by the similarity of other users
+
+.smallest[
+```python
+from collections import defaultdict
+
+def user_based_suggestions(idx):
+    suggestions = defaultdict(float)
+
+    # iterate over interests of similar users
+    for other_idx, sim in most_similar_users_to(idx):
+        for interest in users_interests[other_idx]:
+            suggestions[interest] += sim
+
+    # sort suggestions based on weight
+    suggestions = sorted(suggestions.items(),
+                        key=lambda x:x[1],
+                        reverse=True)
+
+    # return only new interests
+    return [(suggestion,weight)
+            for suggestion,weight in suggestions
+            if suggestion not in users_interests[idx]]
+```]
+
+---
+# Recommend Based On User Similarity
+
+```python
+# reminder: original interests
+users_interests[0]
+```
+```
+['Hadoop', 'Big Data', 'HBase', 'Java', 'Spark', 'Storm', 'Cassandra']
+```
+
+--
+count:false
+
+```python
+# top 5 new recommended interests
+user_based_suggestions(0)[:5]
+```
+```
+[('MapReduce', 0.5669467095138407),
+ ('Postgres', 0.50709255283711),
+ ('MongoDB', 0.50709255283711),
+ ('NoSQL', 0.3380617018914066),
+ ('neural networks', 0.1889822365046136)]
+```
+
+
+---
+# Item-Based Collab. Filtering
+
+- Compute similarites between interests directly
+- Matrix: items x users
+- See [DSFS Chap 22](https://ezproxy.cul.columbia.edu/login?qurl=https%3a%2f%2fsearch.ebscohost.com%2flogin.aspx%3fdirect%3dtrue%26db%3dnlebk%26AN%3d979529%26site%3dehost-live%26scope%3dsite&ebv=EB&ppid=pp_272) for an example
+
+---
+# Issues with Collab. Filtering
+
+<br>
+--
+count:false
+- The cold start problem: What if it's your first time?
+
+--
+count:false
+
+- sparcity: How to recommend movies no one's seen?
+
+---
+# Evaluating Rec. Systems
+
+
+--
+count:false
+- Precision@N: Out of top N, how many were true?
+
+
+--
+count:false
+- Recall@N: Out of all true, how many were in top N 
+
+
+--
+count:false
+- Surprise/Novelty?
+
+
+--
+count:false
+- Diversity?
+
+---
+# Spotify's Recommendation Engine
+
+<br>
+[How Does Spotify Know You So Well?]( https://medium.com/s/story/spotifys-discover-weekly-how-machine-learning-finds-your-new-music-19a41ab76efe)
+
+<br>
+.center[
+![:scale 70%](images/spotify.png)]
+
+
+---
+# Recommendation Engines Review
+
+--
+count:false
+- Content-Based 
+--
+count:false
+- User-Based Collaborative Filtering
+--
+count:false
+- Issues
+--
+count:false
+- Evaluating
+
+
+---
+class:middle
+
+# Questions?
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
