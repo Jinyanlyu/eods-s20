@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Data Management and Project Reporting</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Garamond);
+      @import url(https://fonts.googleapis.com/css?family=Muli:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+    </style>
+    <link rel="stylesheet" href="../style.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+Elements of Data Science - F2020
+
+# Data Management (SQL and NoSQL) and Project Reporting
+
+05/04/2020
+
+---
+# In This Lecture
+
+- Flat Files
+- Relational Databases &amp; SQL
+- NoSQL Databases
+
+
+- Project Reporting
+
+---
+# Flat Files
+
+.center[
+![:scale 50%](images/unnormalized.png)]
+
+.smaller[
+- csv, json, etc
+]
+
+--
+count:false
+.smaller[
+- Pros
+    - Ease of access
+    - Simple to transport
+]
+
+--
+count:false
+.smaller[
+- Cons
+    - Redundant information
+    - Slow to search
+    - No integity checks
+]
+
+---
+# Relational Databases 
+
+--
+count:false
+- Data stored in **tables** (rows/columns)
+--
+count:false
+- Table columns have well defined datatype requirements
+--
+count:false
+- Complex **indexes** can be set up over often used data/searches
+--
+count:false
+- Row level security, separate from the operating system
+--
+count:false
+- Related data is stored in separate tables, referenced by **keys**
+--
+count:false
+- Business logic in **stored procedures** and **views**
+
+
+--
+count:false
+- Many Common Relation Database Systems (RDBMS
+    - sqlite (small footprint db, might already have it installed)
+    - Mysql
+    - PostgreSQL
+    - Microsoft SQL Server
+    - Oracle
+
+---
+# Database Normalization
+
+- Organize data in accordance with **normal forms**
+--
+count:false
+- Rules designed to:
+    - reduce data redundancy
+    - improve data integrity
+
+--
+count:false
+- Rules like:
+    - Has Primary Key
+    - No repeating groups
+    - Cells have single values
+    - No partial dependencies on keys (use whole key)
+    - ...
+
+---
+# Database Normalization
+
+.center[
+![](images/database_normalization.jpeg)]
+
+<br>
+.tiny[
+from https://www.minigranth.com/dbms-tutorial/database-normalization-dbms/]
+
+---
+# De-Normalization
+
+--
+count:false
+- But we want a single dataframe!
+--
+count:false
+- Very often need to **denormalize**
+--
+count:false
+- .. using joins! (see more later)
+
+---
+# Structured Query Language (SQL)
+
+--
+count:false
+- (Semi) standard language for querying, transforming and returning data
+--
+count:false
+- Notable characteristics:
+--
+count:false
+    - generally case independent
+--
+count:false
+    - white-space is ignored
+--
+count:false
+    - strings denoted with single quotes
+--
+count:false
+    - comments start with double-dash "`--`"
+
+--
+count:false
+.smaller[
+```sql
+SELECT 
+    client_id
+    ,lastname
+FROM
+    company_db.bi.clients --usually database.schema.table
+WHERE
+    lastname LIKE 'Gi%'   --only lastnames starting with Gi
+LIMIT 10
+```]
+
+---
+# Small but Powerful DB: SQLite3
+
+--
+count:false
+- likely already have it installed
+--
+count:false
+- many programs use it to store configurations, history, etc
+--
+count:false
+- good place to play around with sql
+
+--
+count:false
+```sh
+bgibson@civet:~$ sqlite3
+SQLite version 3.29.0 2019-07-10 17:32:03
+Enter ".help" for usage hints.
+Connected to a transient in-memory database.
+Use ".open FILENAME" to reopen on a persistent database.
+sqlite&gt;
+```
+
+
+---
+# Pandasql
+
+--
+count:false
+- library for accessing pandas dataframes using SQL
+--
+count:false
+- similar to sqldf in R
+--
+count:false
+- doesn't seem to be maintained? (last commit was Feb, 2017)
+--
+count:false
+- main interface is `sqldf(query, environment)`
+
+--
+count:false
+```
+$ conda install pandasql
+```
+
+--
+```python
+from pandasql import sqldf
+
+pysqldf = lambda query: sqldf(query,globals())
+```
+
+---
+# SQL: CREATE
+
+```sql
+CREATE TABLE clients (
+    client_id       INT NOT NULL,
+    firstname       VARCHAR(200),
+    lastname        VARCHAR(200),
+    home_address_id INT
+);
+```
+
+--
+count:false
+.smallest[
+```python
+clients = pd.DataFrame([],columns=['client_id', 'firstname', 'lastname', 'home_address_id'])
+
+clients['client_id'] = pd.to_numeric(clients.client_id)
+clients['primary_address_id'] = pd.to_numeric(clients.home_address_id)
+```]
+
+--
+count:false
+.smallest[
+```
+<class 'pandas.core.frame.DataFrame'>
+Index: 0 entries
+Data columns (total 4 columns):
+client_id          0 non-null int64
+firstname          0 non-null object
+lastname           0 non-null object
+home_address_id    0 non-null int64
+dtypes: int64(2), object(2)
+memory usage: 0.0+ bytes
+```]
+
+---
+# SQL: INSERT
+
+```sql
+INSERT INTO clients (client_id,firstname,lastname,home_address_id)
+VALUES
+    (102,'Mikel','Rouse',1002),
+    (103,'Laura','Gibson',1003),
+    (104,None,'Hurst',1003);
+```
+
+--
+count:false
+.smallest[
+```python
+data = [[102,'Mikel','Rouse',1002],
+        [103,'Laura','Gibson',1003],
+        [104,None,'Hurst',1003]]
+
+for idx,row in enumerate(data):
+    clients.loc[idx] = row
+```]
+
+--
+count:false
+.smaller[
+```
+   client_id firstname lastname  home_address_id
+0        102     Mikel    Rouse             1002
+1        103     Laura   Gibson             1003
+2        104      None    Hurst             1003
+```]
+
+
+---
+# SQL: SELECT
+
+```sql
+SELECT 
+    client_id
+    ,lastname
+FROM
+    clients
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[:,['client_id','lastname']]
+```]
+--
+count:false
+```
+   client_id lastname
+0        102    Rouse
+1        103   Gibson
+2        104    Hurst
+```
+
+---
+# SQL: AS alias
+
+```sql
+SELECT 
+    client_id AS cid
+    ,lastname
+FROM
+    clients
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[:,['client_id','lastname']].rename({'client_id':'cid'},axis=1)
+```]
+
+--
+count:false
+```
+   cid lastname
+0  102    Rouse
+1  103   Gibson
+2  104    Hurst
+```
+
+---
+# SQL: * (wildcard)
+
+```sql
+SELECT 
+    *
+FROM
+    clients
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[:,:]  # or just clients
+```]
+--
+count:false
+```
+   client_id firstname lastname  home_address_id
+0        102     Mikel    Rouse             1002
+1        103     Laura   Gibson             1003
+2        104      None    Hurst             1003
+```
+
+---
+# SQL: WHERE
+
+```sql
+SELECT
+    *
+FROM
+    clients
+WHERE home_address_id = 1003
+```
+--
+count:false
+.smaller[
+```python
+clients.loc[clients.home_address_id == 1003]
+```]
+
+--
+count:false
+```
+   client_id firstname lastname  home_address_id
+0        103     Laura   Gibson             1003
+1        104      None    Hurst             1003
+```
+
+---
+# SQL: WHERE
+
+```sql
+SELECT
+    *
+FROM
+    clients
+WHERE lastname LIKE 'Gi%'
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[clients.lastname.str.startswith('Gi')]
+```]
+
+--
+count:false
+```
+   client_id firstname lastname  home_address_id
+1        103     Laura   Gibson             1003
+```
+
+---
+# SQL: WHERE
+
+```sql
+SELECT
+    firstname
+    ,lastname
+FROM
+    clients
+WHERE lastname LIKE 'Gi%'
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[clients.lastname.str.startswith('Gi'),['firstname','lastname']]
+```]
+--
+count:false
+.smaller[
+```
+  firstname lastname
+0     Laura   Gibson
+```]
+
+---
+# SQL: WHERE
+
+```sql
+SELECT
+    *
+FROM
+    clients
+WHERE home_address_id = 1003 AND lastname LIKE 'Gi%'
+```
+--
+count:false
+.smaller[
+```python
+clients.loc[(clients.home_address_id == 1003) &amp; 
+            (clients.lastname.str.startswith('Gi'))]
+```]
+
+--
+count:false
+```
+   client_id firstname lastname  home_address_id
+0        103     Laura   Gibson             1003
+```
+
+---
+# SQL: DISTINCT
+
+```sql
+SELECT
+    DISTINCT
+    home_address_id
+FROM clients
+```
+
+--
+count:false
+.smaller[
+```python
+clients.home_address_id.drop_duplicates().to_frame()
+```]
+
+--
+count:false
+```
+   home_address_id
+0             1002
+1             1003
+```
+
+---
+# SQL: LIMIT
+
+```sql
+SELECT
+    firstname
+    ,lastname
+FROM clients
+LIMIT 1
+```
+
+--
+count:false
+.smaller[
+```python
+clients.loc[:,['firstname','lastname']].iloc[:1,:] # or .head(1)
+```]
+--
+count:false
+```
+  firstname lastname
+0     Mikel    Rouse
+```
+
+
+---
+# SQL: Operators
+
+.smaller[
+```sql
+SELECT
+    client_id
+    ,firstname || ' ' || lastname AS fullname -- string concat op is '||'
+FROM
+    clients
+WHERE firstname IS NOT NULL
+```]
+--
+count:false
+--
+count:false
+.smallest[
+```python
+fullname = lambda row: row['firstname'] + ' ' + row['lastname']
+tmp = clients.dropna(subset=['firstname'])[['client_id']]
+tmp['fullname'] = clients.dropna(subset=['firstname']).apply(fullname,axis=1)
+```]
+
+
+--
+count:false
+.smaller[
+```
+   client_id      fullname
+0        102   Mikel Rouse
+1        103  Laura Gibson
+```]
+
+--
+count:false
+.smallest[
+```python
+# or
+clients.dropna(subset=['firstname']) \
+    .apply(lambda row: (row['client_id'],row['firstname'] + ' ' + row['lastname']),
+           result_type='expand',
+           axis=1) \
+    .rename({0:'client_id',1:'lastname'}, axis=1)
+```]
+
+---
+# SQL: COUNT
+
+```sql
+SELECT
+    COUNT(*) AS record_count
+FROM clients
+WHERE firstname IS NOT NULL
+```
+
+--
+count:false
+.smallest[
+```python
+pd.DataFrame([clients.dropna(subset=['firstname']).shape[0]],columns=['record_count'])
+```]
+
+--
+count:false
+```
+   record_count
+0             2
+```
+
+---
+# SQL: ORDER BY
+
+```sql
+SELECT
+    *
+FROM clients
+ORDER BY lastname DESC
+```
+
+--
+count:false
+.smaller[
+```python
+clients.sort_values(by='lastname',ascending=False)
+```]
+--
+count:false
+```
+   client_id firstname lastname  home_address_id
+0        102     Mikel    Rouse             1002
+1        104      None    Hurst             1003
+2        103     Laura   Gibson             1003
+```
+
+---
+# SQL: GROUP BY
+
+```sql
+SELECT
+    home_address_id
+    ,COUNT(*) as nclients
+FROM clients
+GROUP BY home_address_id
+```
+
+--
+count:false
+.smallest[
+```python
+clients.groupby('home_address_id').client_id.count() \
+    .reset_index().rename({'client_id':'nclients'}, axis=1)
+```]
+
+--
+count:false
+```
+   home_address_id  nclients
+0             1002         1
+1             1003         2
+```
+--
+count:false
+.smallest[
+```python
+# or
+clients.home_address_id.value_counts() \
+    .reset_index().rename({'index':'home_address_id','home_address_id':'nclients'},axis=1)
+```]
+
+
+---
+# SQL: Subqueries
+
+.smaller[
+```sql
+SELECT
+    subquery.home_address_id
+    ,subquery.nclients
+FROM (
+    SELECT
+        home_address_id
+        ,COUNT(*) as nclients
+    FROM clients
+    GROUP BY home_address_id
+) subquery
+WHERE nclients &gt; 1
+```]
+--
+count:false
+.smaller[
+```python
+tmp = clients.groupby('home_address_id').client_id.count() \
+        .reset_index().rename({'client_id':'nclients'},axis=1)
+tmp[tmp.nclients &gt; 1]
+```]
+--
+count:false
+.smaller[
+```
+   home_address_id  nclients
+0             1003         2
+```]
+
+---
+# SQL: HAVING
+
+.smaller[
+```sql
+SELECT
+    home_address_id
+    ,COUNT(*) as nclients
+FROM clients
+GROUP BY home_address_id
+HAVING COUNT(*) &gt; 1
+```]
+--
+count:false
+.smaller[
+```python
+clients.groupby('home_address_id') \
+    .filter(lambda g: len(g) &gt; 1) \
+    .groupby('home_address_id').size() \
+    .reset_index().rename({0:'nclients'},axis=1)
+```]
+--
+count:false
+.smaller[
+```
+   home_address_id  nclients
+0             1003         2
+```]
+
+
+
+---
+# SQL: (INNER) JOIN
+
+.smallest[
+```python
+addresses = pd.DataFrame([[1002,'1 First Ave.'],[1003,'2 Second Ave.']],
+                         columns=['address_id','address'])
+```]
+--
+count:false
+.smaller[
+```sql
+SELECT
+    c.firstname
+    ,a.address
+FROM clients AS c
+JOIN addresses AS a ON c.home_address_id = a.address_id
+WHERE c.firstname IS NOT NULL
+```]
+--
+count:false
+.smaller[
+```python
+pd.merge(clients.dropna(),
+         addresses,
+         left_on='home_address_id',
+         right_on='address_id').loc[:,['firstname','address']]
+```]
+
+--
+count:false
+.smaller[
+```
+  firstname        address
+0     Mikel   1 First Ave.
+1     Laura  2 Second Ave.
+```]
+
+
+---
+# SQL: LEFT JOIN
+
+.smallest[
+```python
+# this address_id doesn't exist
+clients.loc[3] = [105,'Scott','Payseur',1004]
+```]
+--
+count:false
+.smaller[
+```sql
+SELECT
+    c.firstname,a.address
+FROM clients AS c
+LEFT JOIN addresses AS a ON c.home_address_id = a.address_id
+WHERE c.firstname IS NOT NULL
+```]
+
+--
+count:false
+.smaller[
+```python
+pd.merge(clients.dropna(), addresses,
+         left_on='home_address_id', right_on='address_id',
+         how='left'
+        ).loc[:,['firstname','address']]
+```]
+
+--
+count:false
+.smaller[
+```
+  firstname        address
+0     Mikel   1 First Ave.
+1     Laura  2 Second Ave.
+2     Scott           None
+```]
+
+---
+# SQL: RIGHT JOIN
+.smallest[
+```python
+# no one uses this address
+addresses.loc[2] = [1005,'3 Third Ave.']
+```]
+
+--
+count:false
+.smaller[
+```sql
+-- this will cause an error in pandasql
+SELECT
+    c.firstname,a.address
+FROM clients AS c
+RIGHT JOIN addresses AS a ON c.home_address_id = a.address_id
+WHERE c.firstname IS NOT NULL
+```]
+
+--
+count:false
+.smaller[
+```python
+pd.merge(clients.dropna(), addresses,
+         left_on='home_address_id', right_on='address_id',
+         how='right'
+        ).loc[:,['firstname','address']])
+```]
+
+--
+count:false
+.smaller[
+```
+  firstname        address
+0     Mikel   1 First Ave.
+1     Laura  2 Second Ave.
+2       NaN   3 Third Ave.
+```]
+
+---
+# SQL: FULL OUTER JOIN
+
+.smaller[
+```sql
+-- this will cause an error in pandasql
+SELECT
+    c.firstname,a.address
+FROM clients AS c
+OUTER JOIN addresses AS a ON c.home_address_id = a.address_id
+WHERE c.firstname IS NOT NULL
+```]
+--
+count:false
+.smaller[
+```python
+pd.merge(clients.dropna(), addresses,
+         left_on='home_address_id', right_on='address_id',
+         how='outer'
+        ).loc[:,['firstname','address']]
+```]
+--
+count:false
+.smaller[
+```
+  firstname        address
+0     Mikel   1 First Ave.
+1     Laura  2 Second Ave.
+2     Scott            NaN
+3       NaN   3 Third Ave.
+```]
+
+
+---
+# SQL: Multiple JOINs
+
+```sql
+SELECT
+    c.firstname || ' ' || c.lastname AS fullname
+    ,ha.address AS home_address
+    ,ba.address AS bus_address
+FROM
+    clients AS c
+LEFT JOIN addresses AS ha ON ha.address_id = c.home_address_id
+LEFT JOIN addresses AS ba ON ba.address_id = c.bus_address_id
+WHERE c.firstname IS NOT NULL
+ORDER BY fullname
+```
+```
+        fullname   home_address   bus_address
+0   Laura Gibson  2 Second Ave.          None
+1    Mikel Rouse   1 First Ave.  1 First Ave.
+2  Scott Payseur           None  3 Third Ave.
+```
+
+---
+# Accessing RDMBS: sqlalchemy
+
+--
+count:false
+- very flexible library for accessing a variety of sql dbs
+--
+count:false
+- several interfaces, on very much like pandasql
+--
+count:false
+- can use to query through pandas itself to retrieve a dataframe
+
+--
+count:false
+.smaller[
+```python
+# read in table from csv
+df = pd.read_csv('../data/yellow_tripdata_2017-01_subset10000rows.csv',
+                 parse_dates=['tpep_pickup_datetime','tpep_dropoff_datetime'])
+```]
+
+--
+count:false
+.smaller[
+```python
+import sqlalchemy
+```]
+
+--
+count:false
+.smaller[
+```python
+# create connection to db
+engine = sqlalchemy.create_engine('sqlite:///yellowtaxi_db')
+```]
+
+--
+count:false
+.smaller[
+```python
+# write table to db
+df.to_sql('trips',engine,if_exists='replace',index=True,index_label='trip_id')
+```]
+
+---
+# Accessing RDMBS: sqlalchemy
+
+--
+count:false
+.smallest[
+```python
+# don't need to recreate if already defined
+engine = sqlalchemy.create_engine('sqlite:///yellowtaxi_db')
+```]
+
+--
+count:false
+.smallest[
+```python
+sql = """
+SELECT
+    tpep_pickup_datetime AS pickup_time
+    ,fare_amount + tip_amount AS total_amount
+FROM trips
+WHERE trip_distance > 25
+ORDER BY fare_amount DESC
+LIMIT 5
+"""
+```
+]
+--
+count:false
+.smallest[
+```python
+pd.read_sql(sql,engine)
+```]
+--
+count:false
+.smallest[
+```
+                  pickup_time  total_amount
+0  2017-01-06 08:43:10.000000        219.00
+1  2017-01-23 15:52:48.000000        165.00
+2  2017-01-03 14:55:31.000000        159.00
+3  2017-01-19 17:41:45.000000        150.36
+4  2017-01-02 06:28:47.000000         88.00
+```]
+
+---
+class:middle
+
+# Questions?
+
+---
+# NoSQL
+
+--
+count:false
+- Anything that isn't traditional SQL/RDBMS
+--
+count:false
+    - key-value (Redis,Berkely DB)
+--
+count:false
+    - document store (MongoDB, DocumentDB)
+--
+count:false
+    - wide column (Cassandra, HBase, DynamoDB)
+--
+count:false
+    - graph (Neo4j)
+--
+count:false
+- Rapidly growing field to fit needs
+--
+count:false
+- Probably more as we speak
+
+
+---
+# Example: Mongo
+
+--
+count:false
+- records represented as documents (think json)
+--
+count:false
+- very flexible structure
+--
+count:false
+- great way to store semi-structure data
+--
+count:false
+- a lot of processing needed to turn into feature vectors
+
+
+--
+count:false
+- contains databases (db)
+--
+count:false
+    - which contain collections (like tables)
+--
+count:false
+    - which you then do finds on 
+
+---
+# Example: Mongo
+
+--
+count:false
+```python
+# conda install -n eods-s20 pymongo
+import pymongo
+```
+
+--
+count:false
+```python
+# start up our client, defaults to the local machine
+mdb = pymongo.MongoClient()
+```
+
+--
+count:false
+```python
+# get a connection to a database
+db = mdb.twitter_db
+```
+
+--
+count:false
+```python
+# get a connection to a collection in that database
+coll = db.twitter_collection
+```
+
+---
+# Example: Mongo
+
+```python
+# get one record
+coll.find_one()
+```
+.smallest[
+```
+'_id': ObjectId('59c95e2c2471847a9783c400'),
+ 'created_at': 'Mon Sep 25 19:51:08 +0000 2017',
+ 'id': 912404120484511749,
+ 'id_str': '912404120484511749',
+ 'text': 'RT @YarmolukDan: Waste Management Just Got Cleaner and More Efficient https://t.co/HtaXzfxbrA #DataScience #DataScientist #BigData #AI #IoT…',
+ 'source': '<a href="http://twitter.com/download/android" rel="nofollow">Twitter for Android</a>',
+ 'truncated': False,
+ 'in_reply_to_status_id': None,
+ 'in_reply_to_status_id_str': None,
+ 'in_reply_to_user_id': None,
+ 'in_reply_to_user_id_str': None,
+ 'in_reply_to_screen_name': None,
+ 'user': {'id': 912391257430794241,
+  'id_str': '912391257430794241',
+  'name': 'Roxane Wattenbarger',
+  'screen_name': 'roxanewattenba6',
+  'location': None,
+  'url': None,
+  'description': 'l',
+  'translator_type': 'none',
+  ...
+ ```]
+
+---
+# Example: Mongo
+
+.smaller[
+```python
+#   coll.find(filter,projection)
+q = coll.find({'entities.hashtags.text':'AI'},
+              {'user.screen_name':1,'entities':1})
+```]
+
+--
+count:false
+.smaller[
+```python
+for r in q:
+    print(r['user']['screen_name'])
+    print([x['text'] for x in r['entities']['hashtags']])
+    print()
+```]
+
+.smaller[
+```
+roxanewattenba6
+['DataScience', 'DataScientist', 'BigData', 'AI', 'IoT']
+
+sawney_patience
+['DataScience', 'DataScientist', 'BigData', 'AI', 'IoT']
+
+jackverr54
+['MachineLearning', 'BigData', 'DataScience', 'AI', 'RStats', 'RLang', 'Statistics']
+
+AvvRossello
+['Chatbots', 'Infographic', 'AI', 'DeepLearning', 'Startup', 'IoT', 'BigData', 'Analytics', 'DataScience', 'Fintech']
+...
+```]
+
+---
+# Project Reporting
+
+--
+count:false
+- Powerpoint!
+--
+count:false
+- Jupyter Notebooks
+--
+count:false
+    - can be converted to slides ([howto](https://bit.ly/2T1vMgV))
+--
+count:false
+    - viewed interactively online ([nbviewer](https://nbviewer.jupyter.org/))
+--
+count:false
+    - collaborated on: ([Google Colab](https://colab.research.google.com/notebooks/welcome.ipynb))
+--
+count:false
+    - many extensions: ([nbextensions](https://github.com/ipython-contrib/jupyter_contrib_nbextensions))
+
+---
+# Project Reporting Tips
+
+--
+count:false
+- State the question, early, usually first!
+--
+count:false
+- Give a preview of the result, then talk about how you got there
+--
+count:false
+- Give an outline, let people know where you're going
+--
+count:false
+- Be dynamic, repeat important points
+--
+count:false
+- Assume your audience is intelligent, but only halfway listening
+--
+count:false
+- State any assumptions, and be ready for pushback
+--
+count:false
+- Try to have at least one 'To do next'
+
+
+
+- Example
+
+---
+class:middle
+
+# Questions?
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <script>
+    // Config Remark
+    remark.macros['scale'] = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+    };
+    config_remark = {
+        highlightStyle: 'github',
+        highlightSpans: true,
+        highlightLines: true,
+        ratio: "16:9"
+    };
+      var slideshow = remark.create(config_remark);
+
+    // Configure MathJax
+    MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] /* removed 'code' entry*/
+    }
+    });
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i = 0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+    </script>
+  </body>
+</html>
